@@ -1,0 +1,106 @@
+{
+  "header": {
+    "tagline": "Plateforme de gestion scolaire",
+    "navAria": "Navigation principale",
+    "links": {
+      "features": "Fonctionnalites",
+      "modules": "Modules",
+      "testimonials": "Temoignages",
+      "contact": "Contact"
+    },
+    "actions": {
+      "demo": "Demander une demo",
+      "start": "Se connecter"
+    },
+    "language": {
+      "label": "Selection de la langue"
+    }
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Gestion scolaire moderne",
+      "title": "Pilotez votre ecole en toute simplicite",
+      "description": "Centralisez l'administration, le suivi pedagogique, la facturation et la communication parents-ecole dans une seule plateforme.",
+      "ctaPrimary": "Se connecter",
+      "ctaSecondary": "Voir les modules",
+      "statsAria": "Statistiques",
+      "statsTitle": "Vue rapide",
+      "stats": [
+        "de temps administratif gagne",
+        "de disponibilite annuelle",
+        "pour direction, professeurs et parents"
+      ]
+    },
+    "features": {
+      "title": "Fonctionnalites principales",
+      "items": [
+        {
+          "title": "Administration",
+          "description": "Inscriptions, dossiers eleves, classes, emplois du temps et archivage numerique."
+        },
+        {
+          "title": "Suivi pedagogique",
+          "description": "Notes, bulletins, absences, evaluations et tableaux de bord par niveau."
+        },
+        {
+          "title": "Finance",
+          "description": "Facturation, echeanciers, relances automatiques et rapprochement des paiements."
+        }
+      ]
+    },
+    "modules": {
+      "title": "Modules metier",
+      "items": [
+        {
+          "title": "Portail parents et eleves",
+          "description": "Acces securise aux notes, devoirs, absences, documents et messagerie."
+        },
+        {
+          "title": "Direction et reporting",
+          "description": "Indicateurs en temps reel, exports et aide a la decision pour l'etablissement."
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "Ils nous font confiance",
+      "quote": "\"Depuis SchoolManager, nous avons fluidifie la communication avec les parents et reduit fortement la charge administrative de l'equipe.\"",
+      "author": "- Directrice, Groupe Scolaire Horizon"
+    }
+  },
+  "footer": {
+    "description": "Une solution complete pour piloter administration, pedagogie et communication.",
+    "links": {
+      "privacy": "Confidentialite",
+      "terms": "Conditions"
+    },
+    "copyright": "© {{year}} SchoolManager. Tous droits reserves."
+  },
+  "login": {
+    "eyebrow": "Acces securise",
+    "title": "Connectez-vous a votre espace",
+    "subtitle": "Utilisez votre e-mail ou numero de telephone avec votre mot de passe.",
+    "benefits": [
+      "Tableau de bord personnalise selon votre role.",
+      "Acces rapide aux classes, paiements et communications.",
+      "Connexion securisee avec une interface simple."
+    ],
+    "form": {
+      "title": "Connexion",
+      "helper": "Saisissez vos identifiants pour continuer.",
+      "identifierLabel": "E-mail ou numero de telephone",
+      "identifierPlaceholder": "exemple@ecole.com ou +2250102030405",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Votre mot de passe",
+      "submit": "Se connecter",
+      "submitLoading": "Connexion...",
+      "backHome": "Retour a l'accueil",
+      "errors": {
+        "identifierRequired": "Ce champ est obligatoire.",
+        "identifierInvalid": "Entrez un e-mail valide ou un numero de telephone valide.",
+        "passwordRequired": "Le mot de passe est obligatoire.",
+        "passwordMinLength": "Le mot de passe doit contenir au moins 8 caracteres."
+      }
+    }
+  }
+}
+

@@ -1,59 +1,81 @@
-# SchoolManagementClient
+# School Management Client
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.15.
+Frontend Angular pour une application de gestion d'ecole.
 
-## Development server
-
-To start a local development server, run:
+## Lancer le projet
 
 ```bash
-ng serve
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Le serveur de dev demarre sur `http://localhost:4200/`.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Compiler le projet
 
 ```bash
-ng generate component component-name
+npm run build
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Structure recommandee
+
+```text
+src/
+  app/
+	core/
+	  layout/
+		header/
+		footer/
+	features/
+	  auth/
+		models/
+		pages/
+		  login/
+	  marketing/
+		pages/
+		  home/
+	app.config.ts
+	app.routes.ts
+	app.ts
+  styles.css
+```
+
+- `core/`: layout global, services singleton, guards.
+- `features/`: modules metier (auth, students, teachers, finance, attendance, communication).
+- `shared/` (a ajouter ensuite): composants reutilisables, pipes, directives, UI kit.
+
+## Librairies recommandees pour ce calibre
+
+- `@angular/cdk`: composants et patterns UI robustes.
+- `@ngx-translate/core` + `@ngx-translate/http-loader`: internationalisation runtime (fr/en).
+- `rxjs`: flux reactifs (deja present).
+
+## Charte de couleur (globale)
+
+La charte est centralisee dans `src/styles.css` via variables CSS:
+
+- `--color-primary`: bleu (`#2563eb`)
+- `--color-primary`: vert foret guineen (`#1E6F3F`)
+- `--color-secondary`: orange soleil (`#F5A623`)
+- `--color-surface`: gris clair profond (`#F5F7FA`)
+- `--color-success`: vert clair paiement complet (`#2ECC71`)
+- `--color-warning`: orange tranche restante (`#F39C12`)
+- `--color-danger`: rouge guinee impaye/retard (`#E74C3C`)
+
+Ces couleurs et les classes globales (`.btn`, `.btn-primary`, `.btn-ghost`, `.container`) sont reutilisees dans toute l'application.
+
+## Internationalisation (fr/en)
+
+- Fichiers de traduction: `public/i18n/fr.json` et `public/i18n/en.json`
+- Configuration provider: `src/app/app.config.ts`
+- Service langue: `src/app/core/i18n/language.service.ts`
+- Selection langue dans le header (`FR` / `EN`)
+
+## Scripts utiles
 
 ```bash
-ng generate --help
+npm start
+npm run build
+npm run test
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

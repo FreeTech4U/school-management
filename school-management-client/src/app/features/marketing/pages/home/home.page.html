@@ -1,0 +1,75 @@
+<app-header />
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">{{ 'home.hero.eyebrow' | translate }}</p>
+        <h1>{{ 'home.hero.title' | translate }}</h1>
+        <p class="hero-text">
+          {{ 'home.hero.description' | translate }}
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" routerLink="/login">{{ 'home.hero.ctaPrimary' | translate }}</a>
+          <a class="btn btn-ghost" href="#modules">{{ 'home.hero.ctaSecondary' | translate }}</a>
+        </div>
+      </div>
+
+      <aside class="hero-card" [attr.aria-label]="'home.hero.statsAria' | translate">
+        <h2>{{ 'home.hero.statsTitle' | translate }}</h2>
+        <ul>
+          <li><strong>+40%</strong><span>{{ 'home.hero.stats.0' | translate }}</span></li>
+          <li><strong>99.9%</strong><span>{{ 'home.hero.stats.1' | translate }}</span></li>
+          <li><strong>1 plateforme</strong><span>{{ 'home.hero.stats.2' | translate }}</span></li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <section id="fonctionnalites" class="section">
+    <div class="container">
+      <h2>{{ 'home.features.title' | translate }}</h2>
+      <div class="cards-3">
+        <article class="card">
+          <h3>{{ 'home.features.items.0.title' | translate }}</h3>
+          <p>{{ 'home.features.items.0.description' | translate }}</p>
+        </article>
+        <article class="card">
+          <h3>{{ 'home.features.items.1.title' | translate }}</h3>
+          <p>{{ 'home.features.items.1.description' | translate }}</p>
+        </article>
+        <article class="card">
+          <h3>{{ 'home.features.items.2.title' | translate }}</h3>
+          <p>{{ 'home.features.items.2.description' | translate }}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="modules" class="section section-muted">
+    <div class="container">
+      <h2>{{ 'home.modules.title' | translate }}</h2>
+      <div class="cards-2">
+        <article class="card">
+          <h3>{{ 'home.modules.items.0.title' | translate }}</h3>
+          <p>{{ 'home.modules.items.0.description' | translate }}</p>
+        </article>
+        <article class="card">
+          <h3>{{ 'home.modules.items.1.title' | translate }}</h3>
+          <p>{{ 'home.modules.items.1.description' | translate }}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="temoignages" class="section">
+    <div class="container">
+      <h2>{{ 'home.testimonials.title' | translate }}</h2>
+      <blockquote class="testimonial">{{ 'home.testimonials.quote' | translate }}</blockquote>
+      <p class="author">{{ 'home.testimonials.author' | translate }}</p>
+    </div>
+  </section>
+</main>
+
+<app-footer />
+

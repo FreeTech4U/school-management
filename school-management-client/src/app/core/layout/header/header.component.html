@@ -1,0 +1,42 @@
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" routerLink="/">
+      <span class="brand-mark">SM</span>
+      <span class="brand-text">
+        <strong>SchoolManager</strong>
+        <small>{{ 'header.tagline' | translate }}</small>
+      </span>
+    </a>
+
+    <nav class="main-nav" [attr.aria-label]="'header.navAria' | translate">
+      <a routerLink="/" fragment="fonctionnalites">{{ 'header.links.features' | translate }}</a>
+      <a routerLink="/" fragment="modules">{{ 'header.links.modules' | translate }}</a>
+      <a routerLink="/" fragment="temoignages">{{ 'header.links.testimonials' | translate }}</a>
+      <a routerLink="/" fragment="contact">{{ 'header.links.contact' | translate }}</a>
+    </nav>
+
+    <div class="actions">
+      <div class="lang-switch" [attr.aria-label]="'header.language.label' | translate" role="group">
+        <button
+          type="button"
+          class="lang-btn"
+          [class.active]="currentLanguage === 'fr'"
+          (click)="changeLanguage('fr')"
+        >
+          FR
+        </button>
+        <button
+          type="button"
+          class="lang-btn"
+          [class.active]="currentLanguage === 'en'"
+          (click)="changeLanguage('en')"
+        >
+          EN
+        </button>
+      </div>
+      <a class="btn btn-ghost" routerLink="/" fragment="contact">{{ 'header.actions.demo' | translate }}</a>
+      <a class="btn btn-primary" routerLink="/login">{{ 'header.actions.start' | translate }}</a>
+    </div>
+  </div>
+</header>
+
