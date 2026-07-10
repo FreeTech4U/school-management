@@ -1,0 +1,196 @@
+{
+  "header": {
+    "tagline": "School management platform",
+    "navAria": "Main navigation",
+    "authNavAria": "Application navigation",
+    "links": {
+      "features": "Features",
+      "modules": "Modules",
+      "testimonials": "Testimonials",
+      "contact": "Contact"
+    },
+    "actions": {
+      "demo": "Request a demo",
+      "start": "Sign in",
+      "logout": "Log out"
+    },
+    "language": {
+      "label": "Language selection"
+    }
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "academic": {
+      "root": "Academic",
+      "students": "Students",
+      "attendance": "Attendance"
+    },
+    "finance": {
+      "root": "Finance",
+      "billing": "Billing",
+      "payments": "Payments",
+      "reports": "Reports"
+    },
+    "communication": "Communication"
+  },
+  "roles": {
+    "administrator": "Administrator",
+    "director": "Director",
+    "accountant": "Accountant"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Modern school management",
+      "title": "Run your school with confidence",
+      "description": "Centralize administration, academic tracking, billing, and parent-school communication in one platform.",
+      "ctaPrimary": "Sign in",
+      "ctaSecondary": "See modules",
+      "statsAria": "Statistics",
+      "statsTitle": "Quick view",
+      "stats": [
+        "administrative time saved",
+        "annual availability",
+        "for leadership, teachers, and parents"
+      ]
+    },
+    "features": {
+      "title": "Core features",
+      "items": [
+        {
+          "title": "Administration",
+          "description": "Enrollments, student records, classes, schedules, and digital archiving."
+        },
+        {
+          "title": "Academic tracking",
+          "description": "Grades, report cards, attendance, assessments, and dashboards by level."
+        },
+        {
+          "title": "Finance",
+          "description": "Billing, payment plans, automated reminders, and reconciliation."
+        }
+      ]
+    },
+    "modules": {
+      "title": "Business modules",
+      "items": [
+        {
+          "title": "Parent and student portal",
+          "description": "Secure access to grades, homework, attendance, documents, and messaging."
+        },
+        {
+          "title": "Leadership and reporting",
+          "description": "Real-time metrics, exports, and decision support for administrators."
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "Trusted by schools",
+      "quote": "\"With SchoolManager, we streamlined communication with parents and significantly reduced the administrative workload for our team.\"",
+      "author": "- Principal, Horizon School Group"
+    }
+  },
+  "footer": {
+    "description": "A complete solution to manage administration, pedagogy, and communication.",
+    "links": {
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "copyright": "© {{year}} SchoolManager. All rights reserved."
+  },
+  "login": {
+    "eyebrow": "Secure access",
+    "title": "Sign in to your workspace",
+    "subtitle": "Use your email or phone number with your password.",
+    "benefits": [
+      "Personalized dashboard based on your role.",
+      "Fast access to classes, payments, and communication.",
+      "Secure sign-in with a clear and simple interface."
+    ],
+    "form": {
+      "title": "Sign in",
+      "helper": "Enter your credentials to continue.",
+      "mockHint": "Mock mode is active: you can test without a backend. Use one of the demo accounts below and the password School@123.",
+      "identifierLabel": "Email or phone number",
+      "identifierPlaceholder": "example@school.com or +12025550123",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Your password",
+      "submit": "Sign in",
+      "submitLoading": "Signing in...",
+      "backHome": "Back to home",
+      "demoAccountsTitle": "Test accounts",
+      "errors": {
+        "identifierRequired": "This field is required.",
+        "identifierInvalid": "Enter a valid email or phone number.",
+        "passwordRequired": "Password is required.",
+        "passwordMinLength": "Password must be at least 8 characters long.",
+        "invalidCredentials": "Invalid credentials. Try a demo account or check the password."
+      }
+    }
+  },
+  "dashboard": {
+    "eyebrow": "Secure area",
+    "title": "Test dashboard",
+    "subtitle": "You are logged in via the mock service, so you can test flows without a backend.",
+    "actions": {
+      "backHome": "Back to home",
+      "logout": "Log out"
+    },
+    "overview": {
+      "label": "Connected profile",
+      "role": "Role"
+    },
+    "stats": {
+      "title": "Quick indicators",
+      "items": [
+        "paid invoices",
+        "partially paid invoices",
+        "overdue or unpaid"
+      ]
+    },
+    "blocks": {
+      "billing": {
+        "title": "Billing",
+        "description": "See payments, delays, and financial statuses for your students."
+      },
+      "communication": {
+        "title": "Communication",
+        "description": "Centralize messages and alerts for parents and administration."
+      }
+    }
+  }
+  ,
+  "workspace": {
+    "eyebrow": "Business module",
+    "actions": {
+      "backDashboard": "Back to dashboard",
+      "home": "Home"
+    },
+    "modules": {
+      "students": {
+        "title": "Student management",
+        "description": "This module will host enrollments, records, classes, and student transfers."
+      },
+      "attendance": {
+        "title": "Attendance tracking",
+        "description": "This module will manage presence, absences, lateness, and justifications."
+      },
+      "billing": {
+        "title": "School billing",
+        "description": "This module will centralize fees, schedules, discounts, and payment follow-up."
+      },
+      "payments": {
+        "title": "Payments and collections",
+        "description": "This module will handle receipts, automatic reminders, and invoice status."
+      },
+      "reports": {
+        "title": "Financial reports",
+        "description": "This module will generate monthly reports, exports, and leadership indicators."
+      },
+      "communication": {
+        "title": "Parent-school communication",
+        "description": "This module will gather notifications, SMS, emails, and communication logs."
+      }
+    }
+  }
+}
+

@@ -1,0 +1,19 @@
+<app-header />
+
+<main class="workspace-main">
+  <section class="container workspace-wrap">
+    <article class="workspace-card">
+      <p class="eyebrow">{{ 'workspace.eyebrow' | translate }}</p>
+      <h1>{{ titleKey() | translate }}</h1>
+      <p class="description">{{ descriptionKey() | translate }}</p>
+
+      <div class="workspace-actions">
+        <a class="btn btn-ghost" routerLink="/dashboard">{{ 'workspace.actions.backDashboard' | translate }}</a>
+        <a class="btn btn-primary" routerLink="/">{{ 'workspace.actions.home' | translate }}</a>
+      </div>
+    </article>
+  </section>
+</main>
+
+<app-footer />
+

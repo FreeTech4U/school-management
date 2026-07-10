@@ -1,0 +1,196 @@
+{
+  "header": {
+    "tagline": "Plateforme de gestion scolaire",
+    "navAria": "Navigation principale",
+    "authNavAria": "Navigation applicative",
+    "links": {
+      "features": "Fonctionnalites",
+      "modules": "Modules",
+      "testimonials": "Temoignages",
+      "contact": "Contact"
+    },
+    "actions": {
+      "demo": "Demander une demo",
+      "start": "Se connecter",
+      "logout": "Se deconnecter"
+    },
+    "language": {
+      "label": "Selection de la langue"
+    }
+  },
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "academic": {
+      "root": "Academique",
+      "students": "Eleves",
+      "attendance": "Assiduite"
+    },
+    "finance": {
+      "root": "Finance",
+      "billing": "Facturation",
+      "payments": "Paiements",
+      "reports": "Rapports"
+    },
+    "communication": "Communication"
+  },
+  "roles": {
+    "administrator": "Administrateur",
+    "director": "Direction",
+    "accountant": "Comptable"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Gestion scolaire moderne",
+      "title": "Pilotez votre ecole en toute simplicite",
+      "description": "Centralisez l'administration, le suivi pedagogique, la facturation et la communication parents-ecole dans une seule plateforme.",
+      "ctaPrimary": "Se connecter",
+      "ctaSecondary": "Voir les modules",
+      "statsAria": "Statistiques",
+      "statsTitle": "Vue rapide",
+      "stats": [
+        "de temps administratif gagne",
+        "de disponibilite annuelle",
+        "pour direction, professeurs et parents"
+      ]
+    },
+    "features": {
+      "title": "Fonctionnalites principales",
+      "items": [
+        {
+          "title": "Administration",
+          "description": "Inscriptions, dossiers eleves, classes, emplois du temps et archivage numerique."
+        },
+        {
+          "title": "Suivi pedagogique",
+          "description": "Notes, bulletins, absences, evaluations et tableaux de bord par niveau."
+        },
+        {
+          "title": "Finance",
+          "description": "Facturation, echeanciers, relances automatiques et rapprochement des paiements."
+        }
+      ]
+    },
+    "modules": {
+      "title": "Modules metier",
+      "items": [
+        {
+          "title": "Portail parents et eleves",
+          "description": "Acces securise aux notes, devoirs, absences, documents et messagerie."
+        },
+        {
+          "title": "Direction et reporting",
+          "description": "Indicateurs en temps reel, exports et aide a la decision pour l'etablissement."
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "Ils nous font confiance",
+      "quote": "\"Depuis SchoolManager, nous avons fluidifie la communication avec les parents et reduit fortement la charge administrative de l'equipe.\"",
+      "author": "- Directrice, Groupe Scolaire Horizon"
+    }
+  },
+  "footer": {
+    "description": "Une solution complete pour piloter administration, pedagogie et communication.",
+    "links": {
+      "privacy": "Confidentialite",
+      "terms": "Conditions"
+    },
+    "copyright": "© {{year}} SchoolManager. Tous droits reserves."
+  },
+  "login": {
+    "eyebrow": "Acces securise",
+    "title": "Connectez-vous a votre espace",
+    "subtitle": "Utilisez votre e-mail ou numero de telephone avec votre mot de passe.",
+    "benefits": [
+      "Tableau de bord personnalise selon votre role.",
+      "Acces rapide aux classes, paiements et communications.",
+      "Connexion securisee avec une interface simple."
+    ],
+    "form": {
+      "title": "Connexion",
+      "helper": "Saisissez vos identifiants pour continuer.",
+      "mockHint": "Mode mock actif: vous pouvez tester sans backend. Utilisez un des comptes demo ci-dessous et le mot de passe School@123.",
+      "identifierLabel": "E-mail ou numero de telephone",
+      "identifierPlaceholder": "exemple@ecole.com ou +2250102030405",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Votre mot de passe",
+      "submit": "Se connecter",
+      "submitLoading": "Connexion...",
+      "backHome": "Retour a l'accueil",
+      "demoAccountsTitle": "Comptes de test",
+      "errors": {
+        "identifierRequired": "Ce champ est obligatoire.",
+        "identifierInvalid": "Entrez un e-mail valide ou un numero de telephone valide.",
+        "passwordRequired": "Le mot de passe est obligatoire.",
+        "passwordMinLength": "Le mot de passe doit contenir au moins 8 caracteres.",
+        "invalidCredentials": "Identifiants invalides. Essayez un compte demo ou verifiez le mot de passe."
+      }
+    }
+  },
+  "dashboard": {
+    "eyebrow": "Espace securise",
+    "title": "Tableau de bord de test",
+    "subtitle": "Vous etes connecte via le service mock, ce qui vous permet de tester les parcours sans serveur.",
+    "actions": {
+      "backHome": "Retour a l'accueil",
+      "logout": "Se deconnecter"
+    },
+    "overview": {
+      "label": "Profil connecte",
+      "role": "Role"
+    },
+    "stats": {
+      "title": "Indicateurs rapides",
+      "items": [
+        "factures payees",
+        "factures partiellement reglees",
+        "impayes ou en retard"
+      ]
+    },
+    "blocks": {
+      "billing": {
+        "title": "Facturation",
+        "description": "Visualisez les paiements, les retards et les statuts financiers de vos eleves."
+      },
+      "communication": {
+        "title": "Communication",
+        "description": "Centralisez les messages et les alertes pour les parents et l'administration."
+      }
+    }
+  }
+  ,
+  "workspace": {
+    "eyebrow": "Module metier",
+    "actions": {
+      "backDashboard": "Retour au tableau de bord",
+      "home": "Accueil"
+    },
+    "modules": {
+      "students": {
+        "title": "Gestion des eleves",
+        "description": "Ce module accueillera les inscriptions, dossiers, classes et transferts d'eleves."
+      },
+      "attendance": {
+        "title": "Suivi de l'assiduite",
+        "description": "Ce module permettra de gerer presences, absences, retards et justifications."
+      },
+      "billing": {
+        "title": "Facturation scolaire",
+        "description": "Ce module centralisera les frais, echeanciers, remises et suivi des reglements."
+      },
+      "payments": {
+        "title": "Paiements et recouvrements",
+        "description": "Ce module pilotera encaissements, relances automatiques et statut des factures."
+      },
+      "reports": {
+        "title": "Rapports financiers",
+        "description": "Ce module generera des rapports mensuels, exports et indicateurs pour la direction."
+      },
+      "communication": {
+        "title": "Communication parents-ecole",
+        "description": "Ce module regroupera notifications, SMS, e-mails et journal des echanges."
+      }
+    }
+  }
+}
+

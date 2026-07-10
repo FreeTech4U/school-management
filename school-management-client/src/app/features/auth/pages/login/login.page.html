@@ -1,0 +1,81 @@
+<app-header />
+
+<main class="login-main">
+  <section class="container login-wrap">
+    <div class="login-copy">
+      <p class="eyebrow">{{ 'login.eyebrow' | translate }}</p>
+      <h1>{{ 'login.title' | translate }}</h1>
+      <p class="subtitle">{{ 'login.subtitle' | translate }}</p>
+
+      <ul class="benefits">
+        <li>{{ 'login.benefits.0' | translate }}</li>
+        <li>{{ 'login.benefits.1' | translate }}</li>
+        <li>{{ 'login.benefits.2' | translate }}</li>
+      </ul>
+    </div>
+
+    <div class="login-card">
+      <h2>{{ 'login.form.title' | translate }}</h2>
+      <p class="helper">{{ 'login.form.helper' | translate }}</p>
+      <p class="mock-hint">{{ 'login.form.mockHint' | translate }}</p>
+
+      @if (authError()) {
+        <p class="field-error field-error-global">{{ authError() | translate }}</p>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+        <label for="identifier">{{ 'login.form.identifierLabel' | translate }}</label>
+        <input
+          id="identifier"
+          type="text"
+          formControlName="identifier"
+          [attr.placeholder]="'login.form.identifierPlaceholder' | translate"
+          autocomplete="username"
+        />
+        @if (isInvalid('identifier')) {
+          @if (loginForm.controls.identifier.errors?.['required']) {
+            <p class="field-error">{{ 'login.form.errors.identifierRequired' | translate }}</p>
+          }
+          @if (loginForm.controls.identifier.errors?.['invalidIdentifier']) {
+            <p class="field-error">{{ 'login.form.errors.identifierInvalid' | translate }}</p>
+          }
+        }
+
+        <label for="password">{{ 'login.form.passwordLabel' | translate }}</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          [attr.placeholder]="'login.form.passwordPlaceholder' | translate"
+          autocomplete="current-password"
+        />
+        @if (isInvalid('password')) {
+          @if (loginForm.controls.password.errors?.['required']) {
+            <p class="field-error">{{ 'login.form.errors.passwordRequired' | translate }}</p>
+          }
+          @if (loginForm.controls.password.errors?.['minlength']) {
+            <p class="field-error">{{ 'login.form.errors.passwordMinLength' | translate }}</p>
+          }
+        }
+
+        <button type="submit" class="btn btn-primary submit-btn" [disabled]="isSubmitting()">
+          {{ (isSubmitting() ? 'login.form.submitLoading' : 'login.form.submit') | translate }}
+        </button>
+      </form>
+
+      <div class="demo-accounts">
+        <h3>{{ 'login.form.demoAccountsTitle' | translate }}</h3>
+        <ul>
+          <li>admin@school.com / School@123</li>
+          <li>compta@school.com / School@123</li>
+          <li>+2250102030405 / School@123</li>
+        </ul>
+      </div>
+
+      <a class="back-home" routerLink="/">{{ 'login.form.backHome' | translate }}</a>
+    </div>
+  </section>
+</main>
+
+<app-footer />
+
