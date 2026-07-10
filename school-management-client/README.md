@@ -54,7 +54,6 @@ src/
 
 La charte est centralisee dans `src/styles.css` via variables CSS:
 
-- `--color-primary`: bleu (`#2563eb`)
 - `--color-primary`: vert foret guineen (`#1E6F3F`)
 - `--color-secondary`: orange soleil (`#F5A623`)
 - `--color-surface`: gris clair profond (`#F5F7FA`)
@@ -70,6 +69,32 @@ Ces couleurs et les classes globales (`.btn`, `.btn-primary`, `.btn-ghost`, `.co
 - Configuration provider: `src/app/app.config.ts`
 - Service langue: `src/app/core/i18n/language.service.ts`
 - Selection langue dans le header (`FR` / `EN`)
+
+## Mode mock pour tester la connexion
+
+Le projet inclut maintenant un faux service d'authentification pour tester le parcours sans backend.
+
+- Service mock: `src/app/core/auth/auth.service.ts`
+- Guardes: `src/app/core/auth/auth.guard.ts` et `src/app/core/auth/guest.guard.ts`
+- Garde role-based: `src/app/core/auth/role.guard.ts`
+- Navigation role-based: `src/app/core/navigation/navigation.service.ts`
+- Route protegee: `/dashboard`
+- Session de test stockee dans `sessionStorage`
+
+Comptes de demo disponibles:
+
+- `admin@school.com` / `School@123`
+- `compta@school.com` / `School@123`
+- `+2250102030405` / `School@123`
+
+## Structure RBAC (roles et sous-menus)
+
+Le projet est maintenant profile pour permettre des fonctionnalites et sous-menus selon le role stocke dans le token.
+
+- Le role est recupere depuis le token mock et expose par `AuthService`
+- Le menu authentifie est genere dynamiquement via `NavigationService`
+- Les routes sensibles utilisent `roleGuard([...roles])`
+- Les modules metier sont prepares via des routes protegees (`/students`, `/attendance`, `/billing`, `/payments`, `/reports`, `/communication`)
 
 ## Scripts utiles
 

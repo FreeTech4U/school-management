@@ -8,12 +8,30 @@
       </span>
     </a>
 
-    <nav class="main-nav" [attr.aria-label]="'header.navAria' | translate">
-      <a routerLink="/" fragment="fonctionnalites">{{ 'header.links.features' | translate }}</a>
-      <a routerLink="/" fragment="modules">{{ 'header.links.modules' | translate }}</a>
-      <a routerLink="/" fragment="temoignages">{{ 'header.links.testimonials' | translate }}</a>
-      <a routerLink="/" fragment="contact">{{ 'header.links.contact' | translate }}</a>
-    </nav>
+    @if (isAuthenticated) {
+      <nav class="main-nav" [attr.aria-label]="'header.authNavAria' | translate">
+        @for (section of menuSections; track section.key) {
+          <div class="menu-group">
+            <a [routerLink]="section.route">{{ section.labelKey | translate }}</a>
+
+            @if (section.children?.length) {
+              <div class="submenu">
+                @for (submenu of section.children; track submenu.key) {
+                  <a [routerLink]="submenu.route">{{ submenu.labelKey | translate }}</a>
+                }
+              </div>
+            }
+          </div>
+        }
+      </nav>
+    } @else {
+      <nav class="main-nav" [attr.aria-label]="'header.navAria' | translate">
+        <a routerLink="/" fragment="fonctionnalites">{{ 'header.links.features' | translate }}</a>
+        <a routerLink="/" fragment="modules">{{ 'header.links.modules' | translate }}</a>
+        <a routerLink="/" fragment="temoignages">{{ 'header.links.testimonials' | translate }}</a>
+        <a routerLink="/" fragment="contact">{{ 'header.links.contact' | translate }}</a>
+      </nav>
+    }
 
     <div class="actions">
       <div class="lang-switch" [attr.aria-label]="'header.language.label' | translate" role="group">
@@ -34,8 +52,14 @@
           EN
         </button>
       </div>
-      <a class="btn btn-ghost" routerLink="/" fragment="contact">{{ 'header.actions.demo' | translate }}</a>
-      <a class="btn btn-primary" routerLink="/login">{{ 'header.actions.start' | translate }}</a>
+
+      @if (isAuthenticated) {
+        <span class="user-chip">{{ currentUser?.fullName }}</span>
+        <button type="button" class="btn btn-primary" (click)="logout()">{{ 'header.actions.logout' | translate }}</button>
+      } @else {
+        <a class="btn btn-ghost" routerLink="/" fragment="contact">{{ 'header.actions.demo' | translate }}</a>
+        <a class="btn btn-primary" routerLink="/login">{{ 'header.actions.start' | translate }}</a>
+      }
     </div>
   </div>
 </header>

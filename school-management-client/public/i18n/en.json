@@ -2,6 +2,7 @@
   "header": {
     "tagline": "School management platform",
     "navAria": "Main navigation",
+    "authNavAria": "Application navigation",
     "links": {
       "features": "Features",
       "modules": "Modules",
@@ -10,11 +11,32 @@
     },
     "actions": {
       "demo": "Request a demo",
-      "start": "Sign in"
+      "start": "Sign in",
+      "logout": "Log out"
     },
     "language": {
       "label": "Language selection"
     }
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "academic": {
+      "root": "Academic",
+      "students": "Students",
+      "attendance": "Attendance"
+    },
+    "finance": {
+      "root": "Finance",
+      "billing": "Billing",
+      "payments": "Payments",
+      "reports": "Reports"
+    },
+    "communication": "Communication"
+  },
+  "roles": {
+    "administrator": "Administrator",
+    "director": "Director",
+    "accountant": "Accountant"
   },
   "home": {
     "hero": {
@@ -87,6 +109,7 @@
     "form": {
       "title": "Sign in",
       "helper": "Enter your credentials to continue.",
+      "mockHint": "Mock mode is active: you can test without a backend. Use one of the demo accounts below and the password School@123.",
       "identifierLabel": "Email or phone number",
       "identifierPlaceholder": "example@school.com or +12025550123",
       "passwordLabel": "Password",
@@ -94,11 +117,78 @@
       "submit": "Sign in",
       "submitLoading": "Signing in...",
       "backHome": "Back to home",
+      "demoAccountsTitle": "Test accounts",
       "errors": {
         "identifierRequired": "This field is required.",
         "identifierInvalid": "Enter a valid email or phone number.",
         "passwordRequired": "Password is required.",
-        "passwordMinLength": "Password must be at least 8 characters long."
+        "passwordMinLength": "Password must be at least 8 characters long.",
+        "invalidCredentials": "Invalid credentials. Try a demo account or check the password."
+      }
+    }
+  },
+  "dashboard": {
+    "eyebrow": "Secure area",
+    "title": "Test dashboard",
+    "subtitle": "You are logged in via the mock service, so you can test flows without a backend.",
+    "actions": {
+      "backHome": "Back to home",
+      "logout": "Log out"
+    },
+    "overview": {
+      "label": "Connected profile",
+      "role": "Role"
+    },
+    "stats": {
+      "title": "Quick indicators",
+      "items": [
+        "paid invoices",
+        "partially paid invoices",
+        "overdue or unpaid"
+      ]
+    },
+    "blocks": {
+      "billing": {
+        "title": "Billing",
+        "description": "See payments, delays, and financial statuses for your students."
+      },
+      "communication": {
+        "title": "Communication",
+        "description": "Centralize messages and alerts for parents and administration."
+      }
+    }
+  }
+  ,
+  "workspace": {
+    "eyebrow": "Business module",
+    "actions": {
+      "backDashboard": "Back to dashboard",
+      "home": "Home"
+    },
+    "modules": {
+      "students": {
+        "title": "Student management",
+        "description": "This module will host enrollments, records, classes, and student transfers."
+      },
+      "attendance": {
+        "title": "Attendance tracking",
+        "description": "This module will manage presence, absences, lateness, and justifications."
+      },
+      "billing": {
+        "title": "School billing",
+        "description": "This module will centralize fees, schedules, discounts, and payment follow-up."
+      },
+      "payments": {
+        "title": "Payments and collections",
+        "description": "This module will handle receipts, automatic reminders, and invoice status."
+      },
+      "reports": {
+        "title": "Financial reports",
+        "description": "This module will generate monthly reports, exports, and leadership indicators."
+      },
+      "communication": {
+        "title": "Parent-school communication",
+        "description": "This module will gather notifications, SMS, emails, and communication logs."
       }
     }
   }

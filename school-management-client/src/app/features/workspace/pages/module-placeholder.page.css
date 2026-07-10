@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.workspace-main {
+  min-height: 70vh;
+  padding: 3rem 0;
+  background: linear-gradient(180deg, #fff 0%, var(--color-surface) 100%);
+}
+
+.workspace-wrap {
+  display: grid;
+}
+
+.workspace-card {
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-primary);
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1.4rem;
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+
+.description {
+  color: var(--color-muted);
+  max-width: 68ch;
+}
+
+.workspace-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+

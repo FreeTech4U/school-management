@@ -1,0 +1,50 @@
+<app-header />
+
+<main class="dashboard-main">
+  <section class="container dashboard-wrap">
+    <header class="dashboard-hero">
+      <p class="eyebrow">{{ 'dashboard.eyebrow' | translate }}</p>
+      <h1>{{ 'dashboard.title' | translate }}</h1>
+      <p class="subtitle">{{ 'dashboard.subtitle' | translate }}</p>
+
+      <div class="dashboard-actions">
+        <a class="btn btn-ghost" routerLink="/">{{ 'dashboard.actions.backHome' | translate }}</a>
+        <button type="button" class="btn btn-primary" (click)="logout()">
+          {{ 'dashboard.actions.logout' | translate }}
+        </button>
+      </div>
+    </header>
+
+    <section class="dashboard-grid">
+      <article class="card overview-card">
+        <p class="card-label">{{ 'dashboard.overview.label' | translate }}</p>
+        <h2>{{ user?.fullName }}</h2>
+        <p class="meta">{{ user?.identifier }}</p>
+        <p class="role">{{ 'dashboard.overview.role' | translate }}: {{ roleLabelKey | translate }}</p>
+      </article>
+
+      <article class="card stats-card">
+        <h2>{{ 'dashboard.stats.title' | translate }}</h2>
+        <ul class="stats-list">
+          <li><strong class="status-success">78%</strong><span>{{ 'dashboard.stats.items.0' | translate }}</span></li>
+          <li><strong class="status-warning">14</strong><span>{{ 'dashboard.stats.items.1' | translate }}</span></li>
+          <li><strong class="status-danger">5</strong><span>{{ 'dashboard.stats.items.2' | translate }}</span></li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="dashboard-grid dashboard-grid-secondary">
+      <article class="card">
+        <h2>{{ 'dashboard.blocks.billing.title' | translate }}</h2>
+        <p>{{ 'dashboard.blocks.billing.description' | translate }}</p>
+      </article>
+      <article class="card">
+        <h2>{{ 'dashboard.blocks.communication.title' | translate }}</h2>
+        <p>{{ 'dashboard.blocks.communication.description' | translate }}</p>
+      </article>
+    </section>
+  </section>
+</main>
+
+<app-footer />
+

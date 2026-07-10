@@ -2,6 +2,7 @@
   "header": {
     "tagline": "Plateforme de gestion scolaire",
     "navAria": "Navigation principale",
+    "authNavAria": "Navigation applicative",
     "links": {
       "features": "Fonctionnalites",
       "modules": "Modules",
@@ -10,11 +11,32 @@
     },
     "actions": {
       "demo": "Demander une demo",
-      "start": "Se connecter"
+      "start": "Se connecter",
+      "logout": "Se deconnecter"
     },
     "language": {
       "label": "Selection de la langue"
     }
+  },
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "academic": {
+      "root": "Academique",
+      "students": "Eleves",
+      "attendance": "Assiduite"
+    },
+    "finance": {
+      "root": "Finance",
+      "billing": "Facturation",
+      "payments": "Paiements",
+      "reports": "Rapports"
+    },
+    "communication": "Communication"
+  },
+  "roles": {
+    "administrator": "Administrateur",
+    "director": "Direction",
+    "accountant": "Comptable"
   },
   "home": {
     "hero": {
@@ -87,6 +109,7 @@
     "form": {
       "title": "Connexion",
       "helper": "Saisissez vos identifiants pour continuer.",
+      "mockHint": "Mode mock actif: vous pouvez tester sans backend. Utilisez un des comptes demo ci-dessous et le mot de passe School@123.",
       "identifierLabel": "E-mail ou numero de telephone",
       "identifierPlaceholder": "exemple@ecole.com ou +2250102030405",
       "passwordLabel": "Mot de passe",
@@ -94,11 +117,78 @@
       "submit": "Se connecter",
       "submitLoading": "Connexion...",
       "backHome": "Retour a l'accueil",
+      "demoAccountsTitle": "Comptes de test",
       "errors": {
         "identifierRequired": "Ce champ est obligatoire.",
         "identifierInvalid": "Entrez un e-mail valide ou un numero de telephone valide.",
         "passwordRequired": "Le mot de passe est obligatoire.",
-        "passwordMinLength": "Le mot de passe doit contenir au moins 8 caracteres."
+        "passwordMinLength": "Le mot de passe doit contenir au moins 8 caracteres.",
+        "invalidCredentials": "Identifiants invalides. Essayez un compte demo ou verifiez le mot de passe."
+      }
+    }
+  },
+  "dashboard": {
+    "eyebrow": "Espace securise",
+    "title": "Tableau de bord de test",
+    "subtitle": "Vous etes connecte via le service mock, ce qui vous permet de tester les parcours sans serveur.",
+    "actions": {
+      "backHome": "Retour a l'accueil",
+      "logout": "Se deconnecter"
+    },
+    "overview": {
+      "label": "Profil connecte",
+      "role": "Role"
+    },
+    "stats": {
+      "title": "Indicateurs rapides",
+      "items": [
+        "factures payees",
+        "factures partiellement reglees",
+        "impayes ou en retard"
+      ]
+    },
+    "blocks": {
+      "billing": {
+        "title": "Facturation",
+        "description": "Visualisez les paiements, les retards et les statuts financiers de vos eleves."
+      },
+      "communication": {
+        "title": "Communication",
+        "description": "Centralisez les messages et les alertes pour les parents et l'administration."
+      }
+    }
+  }
+  ,
+  "workspace": {
+    "eyebrow": "Module metier",
+    "actions": {
+      "backDashboard": "Retour au tableau de bord",
+      "home": "Accueil"
+    },
+    "modules": {
+      "students": {
+        "title": "Gestion des eleves",
+        "description": "Ce module accueillera les inscriptions, dossiers, classes et transferts d'eleves."
+      },
+      "attendance": {
+        "title": "Suivi de l'assiduite",
+        "description": "Ce module permettra de gerer presences, absences, retards et justifications."
+      },
+      "billing": {
+        "title": "Facturation scolaire",
+        "description": "Ce module centralisera les frais, echeanciers, remises et suivi des reglements."
+      },
+      "payments": {
+        "title": "Paiements et recouvrements",
+        "description": "Ce module pilotera encaissements, relances automatiques et statut des factures."
+      },
+      "reports": {
+        "title": "Rapports financiers",
+        "description": "Ce module generera des rapports mensuels, exports et indicateurs pour la direction."
+      },
+      "communication": {
+        "title": "Communication parents-ecole",
+        "description": "Ce module regroupera notifications, SMS, e-mails et journal des echanges."
       }
     }
   }
