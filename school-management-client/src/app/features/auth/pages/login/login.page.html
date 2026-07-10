@@ -17,6 +17,11 @@
     <div class="login-card">
       <h2>{{ 'login.form.title' | translate }}</h2>
       <p class="helper">{{ 'login.form.helper' | translate }}</p>
+      <p class="mock-hint">{{ 'login.form.mockHint' | translate }}</p>
+
+      @if (authError()) {
+        <p class="field-error field-error-global">{{ authError() | translate }}</p>
+      }
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
         <label for="identifier">{{ 'login.form.identifierLabel' | translate }}</label>
@@ -57,6 +62,15 @@
           {{ (isSubmitting() ? 'login.form.submitLoading' : 'login.form.submit') | translate }}
         </button>
       </form>
+
+      <div class="demo-accounts">
+        <h3>{{ 'login.form.demoAccountsTitle' | translate }}</h3>
+        <ul>
+          <li>admin@school.com / School@123</li>
+          <li>compta@school.com / School@123</li>
+          <li>+2250102030405 / School@123</li>
+        </ul>
+      </div>
 
       <a class="back-home" routerLink="/">{{ 'login.form.backHome' | translate }}</a>
     </div>
