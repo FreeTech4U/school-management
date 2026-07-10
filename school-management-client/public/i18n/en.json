@@ -1,0 +1,106 @@
+{
+  "header": {
+    "tagline": "School management platform",
+    "navAria": "Main navigation",
+    "links": {
+      "features": "Features",
+      "modules": "Modules",
+      "testimonials": "Testimonials",
+      "contact": "Contact"
+    },
+    "actions": {
+      "demo": "Request a demo",
+      "start": "Sign in"
+    },
+    "language": {
+      "label": "Language selection"
+    }
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Modern school management",
+      "title": "Run your school with confidence",
+      "description": "Centralize administration, academic tracking, billing, and parent-school communication in one platform.",
+      "ctaPrimary": "Sign in",
+      "ctaSecondary": "See modules",
+      "statsAria": "Statistics",
+      "statsTitle": "Quick view",
+      "stats": [
+        "administrative time saved",
+        "annual availability",
+        "for leadership, teachers, and parents"
+      ]
+    },
+    "features": {
+      "title": "Core features",
+      "items": [
+        {
+          "title": "Administration",
+          "description": "Enrollments, student records, classes, schedules, and digital archiving."
+        },
+        {
+          "title": "Academic tracking",
+          "description": "Grades, report cards, attendance, assessments, and dashboards by level."
+        },
+        {
+          "title": "Finance",
+          "description": "Billing, payment plans, automated reminders, and reconciliation."
+        }
+      ]
+    },
+    "modules": {
+      "title": "Business modules",
+      "items": [
+        {
+          "title": "Parent and student portal",
+          "description": "Secure access to grades, homework, attendance, documents, and messaging."
+        },
+        {
+          "title": "Leadership and reporting",
+          "description": "Real-time metrics, exports, and decision support for administrators."
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "Trusted by schools",
+      "quote": "\"With SchoolManager, we streamlined communication with parents and significantly reduced the administrative workload for our team.\"",
+      "author": "- Principal, Horizon School Group"
+    }
+  },
+  "footer": {
+    "description": "A complete solution to manage administration, pedagogy, and communication.",
+    "links": {
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "copyright": "© {{year}} SchoolManager. All rights reserved."
+  },
+  "login": {
+    "eyebrow": "Secure access",
+    "title": "Sign in to your workspace",
+    "subtitle": "Use your email or phone number with your password.",
+    "benefits": [
+      "Personalized dashboard based on your role.",
+      "Fast access to classes, payments, and communication.",
+      "Secure sign-in with a clear and simple interface."
+    ],
+    "form": {
+      "title": "Sign in",
+      "helper": "Enter your credentials to continue.",
+      "identifierLabel": "Email or phone number",
+      "identifierPlaceholder": "example@school.com or +12025550123",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Your password",
+      "submit": "Sign in",
+      "submitLoading": "Signing in...",
+      "backHome": "Back to home",
+      "errors": {
+        "identifierRequired": "This field is required.",
+        "identifierInvalid": "Enter a valid email or phone number.",
+        "passwordRequired": "Password is required.",
+        "passwordMinLength": "Password must be at least 8 characters long."
+      }
+    }
+  }
+}
+
