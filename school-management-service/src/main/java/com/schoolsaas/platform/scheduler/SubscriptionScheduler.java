@@ -1,0 +1,38 @@
+package com.schoolsaas.platform.scheduler;
+
+import com.schoolsaas.platform.entity.SchoolSubscription;
+import com.schoolsaas.platform.repository.SchoolSubscriptionRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class SubscriptionScheduler {
+
+    private final SchoolSubscriptionRepository subscriptionRepository;
+
+    @Scheduled(cron = "0 0 1 * * *") // Every day at 1 AM
+    @Transactional
+    public void checkExpirations() {
+        log.info("Checking for expired subscriptions...");
+        
+        List<SchoolSubscription> subscriptions = subscriptionRepository.findAll();
+        LocalDate today = LocalDate.now();
+
+        for (SchoolSubscription sub : subscriptions) {
+            if ("active".equals(sub.getStatus()) && sub.getEndDate().isBefore(today)) {
+                log.info("Subscription for school {} expired", sub.getSchool().getName());
+                sub.setStatus("expired");
+                sub.getSchool().setStatus("suspended");
+                subscriptionRepository.save(sub);
+            }
+        }
+    }
+}
