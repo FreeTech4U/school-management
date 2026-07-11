@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -57,4 +58,13 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "Une erreur inattendue est survenue"));
     }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.warn("Resource not found: {}", e.getResourcePath());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("RESOURCE_NOT_FOUND", "Resource not found"));
+    }
+
 }

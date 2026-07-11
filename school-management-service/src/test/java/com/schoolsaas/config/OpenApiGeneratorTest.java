@@ -22,9 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.sql.init.mode=never",
-        "spring.jpa.properties.hibernate.multiTenancy=NONE",
-        "spring.jpa.properties.hibernate.multi_tenant_connection_provider=org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl",
-        "spring.jpa.properties.hibernate.tenant_identifier_resolver=org.hibernate.context.internal.DefaultIdentifierResolver"
+        "spring.jpa.properties.hibernate.multiTenancy=NONE"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("dev")

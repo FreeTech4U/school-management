@@ -35,6 +35,11 @@ public class DashboardService {
     }
 
     public void refreshStats() {
-        jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_stats");
+        try {
+            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_stats");
+        } catch (Exception e) {
+            // Fallback to non-concurrent refresh if concurrent fails (e.g. if it's the first time or index issue)
+            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW mv_dashboard_stats");
+        }
     }
 }

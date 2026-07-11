@@ -1,13 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Shared Functions
-CREATE OR REPLACE FUNCTION fn_update_updated_at() RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 -- 1. Identity
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -365,7 +355,7 @@ BEGIN
 END $$;
 
 -- 10. Dashboard Materialized View
-CREATE MATERIALIZED VIEW mv_dashboard_stats AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_dashboard_stats AS
 SELECT
     COUNT(DISTINCT e.id) FILTER (WHERE e.status = 'ENROLLED') AS active_students,
     COUNT(DISTINCT e.student_id)                               AS total_students,
@@ -384,9 +374,10 @@ SELECT
 FROM enrollments e
 JOIN students s ON e.student_id = s.id
 LEFT JOIN student_fees sf ON sf.enrollment_id = e.id
-WHERE e.academic_year_id = (SELECT id FROM academic_years WHERE is_current=TRUE LIMIT 1);
+    WHERE e.academic_year_id = (SELECT id FROM academic_years WHERE is_current=TRUE LIMIT 1)
+WITH NO DATA;
 
-CREATE UNIQUE INDEX ON mv_dashboard_stats((1));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_dashboard_stats_id ON mv_dashboard_stats((1));
 
 -- Seed data for SMS templates
 INSERT INTO sms_templates (code, category, content_fr, variables) VALUES

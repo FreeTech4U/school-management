@@ -1,5 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Shared Functions
+CREATE OR REPLACE FUNCTION fn_update_updated_at() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE subscription_plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code VARCHAR(50) UNIQUE NOT NULL,
@@ -54,7 +62,8 @@ CREATE TABLE subscription_payments (
     payment_method VARCHAR(50),
     transaction_reference VARCHAR(100) UNIQUE,
     status VARCHAR(20) DEFAULT 'completed',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Seed data for plans

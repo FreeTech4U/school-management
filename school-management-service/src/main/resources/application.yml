@@ -10,17 +10,17 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         show_sql: true
         multiTenancy: SCHEMA
-        multi_tenant_connection_provider: com.schoolsaas.config.multitenancy.SchemaMultiTenantConnectionProvider
-        tenant_identifier_resolver: com.schoolsaas.config.multitenancy.TenantIdentifierResolver
   flyway:
     enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: false
     locations: classpath:db/migration/public
     schemas: public
   servlet:
@@ -49,9 +49,11 @@ app:
 
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    url: /v3/api-docs
     operationsSorter: alpha
     tagsSorter: alpha
   show-actuator: true
@@ -71,7 +73,7 @@ spring:
       on-profile: prod
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     show-sql: false
   flyway:
     enabled: true

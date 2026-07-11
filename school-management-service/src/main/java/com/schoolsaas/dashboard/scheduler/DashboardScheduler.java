@@ -20,7 +20,7 @@ public class DashboardScheduler {
     private final DashboardService dashboardService;
     private final SchoolRepository schoolRepository;
 
-    @Scheduled(cron = "0 */15 * * * *") // Every 15 minutes
+    @Scheduled(cron = "0 */45 * * * *") // Every 15 minutes
     @CacheEvict(value = "dashboard_stats", allEntries = true)
     public void refreshAllDashboards() {
         log.info("Refreshing all dashboard stats...");

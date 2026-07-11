@@ -83,4 +83,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             MDC.remove("tenantId");
         }
     }
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        return path.equals("/swagger-ui.html")
+                || path.startsWith("/swagger-ui/")
+                || path.equals("/api-docs")
+                || path.startsWith("/api-docs/")
+                || path.equals("/v3/api-docs")
+                || path.startsWith("/v3/api-docs/");
+    }
 }

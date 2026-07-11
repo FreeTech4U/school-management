@@ -60,11 +60,14 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
 
     @Override
     public boolean isUnwrappableAs(Class<?> unwrapType) {
-        return false;
+        return unwrapType != null && unwrapType.isAssignableFrom(getClass());
     }
 
     @Override
     public <T> T unwrap(Class<T> unwrapType) {
+        if (isUnwrappableAs(unwrapType)) {
+            return unwrapType.cast(this);
+        }
         return null;
     }
 

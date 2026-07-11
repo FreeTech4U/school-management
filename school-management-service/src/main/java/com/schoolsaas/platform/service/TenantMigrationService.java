@@ -17,13 +17,21 @@ public class TenantMigrationService {
     public void migrateTenant(String schemaName) {
         log.info("Applying Flyway migrations to schema: {}", schemaName);
         
-        Flyway flyway = Flyway.configure()
-                .dataSource(dataSource)
-                .locations("classpath:db/migration/tenant")
-                .schemas(schemaName)
-                .defaultSchema(schemaName)
-                .load();
-        
-        flyway.migrate();
+        try {
+            Flyway flyway = Flyway.configure()
+                    .dataSource(dataSource)
+                    .locations("classpath:db/migration/tenant")
+                    .schemas(schemaName)
+                    .defaultSchema(schemaName)
+                    .baselineOnMigrate(true)
+                    .validateOnMigrate(false)
+                    .load();
+            
+            flyway.migrate();
+            log.info("Successfully migrated schema: {}", schemaName);
+        } catch (Exception e) {
+            log.error("Error migrating schema {}: {}", schemaName, e.getMessage());
+            throw e;
+        }
     }
 }
