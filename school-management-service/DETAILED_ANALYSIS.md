@@ -254,40 +254,59 @@ Mappers manquants :
 
 ## 7️⃣ BASE DE DONNÉES : TRIGGERS & VUES
 
-### ❌ Triggers PostgreSQL manquants
+### ✅ Triggers PostgreSQL IMPLÉMENTÉS
 
-**Specs (TX-03) exige :**
+**Specs (TX-03) exige :** ✅ **TOUS PRÉSENTS** (V1__init_tenant_schema.sql)
 
-```sql
--- 1. Génération numéro étudiant
-fn_generate_student_number()  → EL-YYYY-NNNN
+1. **fn_update_updated_at()** ✅
+   - Défini ligne 14-20
+   - Triggers appliqués sur 17 tables (ligne 495-546)
+   - Mise à jour automatique des `updated_at`
 
--- 2. Génération numéro reçu
-fn_generate_receipt_number()  → REC-YYYYMM-NNNN
+2. **fn_generate_student_number()** ✅
+   - Défini ligne 558-575
+   - Génère format `EL-YYYY-NNNN` ✅
+   - Trigger trg_generate_student_number ligne 577
 
--- 3. Recalcul statut frais
-fn_recalculate_fee_status()   → Après PaymentAllocation
+3. **fn_generate_receipt_number()** ✅
+   - Défini ligne 589-605
+   - Génère format `REC-YYYYMM-NNNN` ✅
+   - Trigger trg_generate_receipt_number ligne 607
 
--- 4. Update timestamp
-fn_update_updated_at()        → Sur TOUS les UPDATEs
-```
+4. **fn_recalculate_fee_status()** ✅
+   - Défini ligne 620-666
+   - Recalcule StudentFee.status après PaymentAllocation
+   - Gère INSERT/UPDATE/DELETE
+   - Trigger trg_recalculate_fee_status ligne 668
 
-**Impact :** Numéros automatiques ne sont pas générés → ID manquent
+**Impact :** Numéros générés AUTOMATIQUEMENT ✅
 
 ---
 
-### ❌ Vue matérialisée manquante
+### ✅ Vue matérialisée IMPLÉMENTÉE
 
-**Specs (F-14) exige :**
-```sql
-CREATE MATERIALIZED VIEW mv_dashboard_stats AS
-SELECT 
-  COUNT(*) as totalStudents,
-  SUM(CASE WHEN status='ACTIVE' THEN 1 ELSE 0 END) as activeStudents,
-  -- ... 10+ autres stats
-```
+**Specs (F-14) exige :** ✅ **PRÉSENT** (V1__init_tenant_schema.sql)
 
-**Impact :** Dashboard charge tout à la volée → lent en prod
+- Créée ligne 679-706 : `mv_dashboard_stats`
+- Index UNIQUE pour REFRESH CONCURRENTLY (ligne 709)
+- Calcule tous les KPIs dashboard
+- À rafraîchir par scheduler toutes les 15 min
+
+---
+
+### ✅ Templates SMS PRÉ-CHARGÉS IMPLÉMENTÉS
+
+**Specs (F-13) exige 4 templates :** ✅ **TOUS PRÉSENTS** (V1__init_tenant_schema.sql)
+
+Insérés ligne 723-738 :
+- ✅ `fee_reminder` (FINANCIAL)
+- ✅ `payment_received` (FINANCIAL)
+- ✅ `report_card_published` (ACADEMIC)
+- ✅ `absence_notification` (ACADEMIC)
+
+Chaque template inclut les variables en JSON ✅
+
+**Impact :** SMS prêts à être envoyés immédiatement ✅
 
 ---
 
@@ -379,14 +398,14 @@ public ResponseEntity login(...) { ... }
 5. [ ] Créer 6 endpoints F-11 (Frais)
 6. [ ] Créer 8 endpoints F-16 (Bulletins)
 7. [ ] Créer 4 endpoints F-19 (Promotion)
-8. [ ] Créer triggers PostgreSQL (numbers generation)
+8. [ ] ✅ Triggers PostgreSQL (déjà implémentés)
 
 ### 🟠 P1 (Avant prod)
 1. [ ] Convertir TOUS les String → Enum (8 enums)
 2. [ ] Ajouter @ManyToOne relations Hibernate
 3. [ ] Créer tous les Mappers DTOs
 4. [ ] Implémenter SmsScheduler
-5. [ ] Créer vue matérialisée dashboard
+5. [ ] ✅ Vue matérialisée dashboard (déjà implémentée)
 6. [ ] Ajouter validations (phone, slug, coefficient)
 7. [ ] Fixer tests cassés
 8. [ ] Ajouter rate-limiting endpoints publics
@@ -412,7 +431,8 @@ public ResponseEntity login(...) { ... }
 | Relations @ManyToOne | 2/8 | 25% ⚠️ |
 | Tests passants | 33/38 | 87% ⚠️ |
 | Services métier | 15/25 | 60% |
-| Triggers DB | 0/4 | 0% ⚠️ |
+| Triggers DB | 4/4 | **100% ✅** |
+| Vue matérialisée | 1/1 | **100% ✅** |
 
 ---
 
