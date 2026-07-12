@@ -1,6 +1,8 @@
 package com.schoolsaas.attendance.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.AttendanceStatus;
+import com.schoolsaas.common.enums.Period;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,10 +25,12 @@ public class Attendance extends BaseEntity {
     private LocalDate date;
 
     @Column(nullable = false)
-    private String period = "FULL_DAY"; // FULL_DAY, MORNING, AFTERNOON
+    @Enumerated(EnumType.STRING)
+    private Period period = Period.FULL_DAY;
 
     @Column(nullable = false)
-    private String status; // PRESENT, ABSENT, LATE, EXCUSED
+    @Enumerated(EnumType.STRING)
+    private AttendanceStatus status;
 
     private String justification;
 

@@ -2,6 +2,7 @@ package com.schoolsaas.attendance.service;
 
 import com.schoolsaas.attendance.entity.Attendance;
 import com.schoolsaas.attendance.repository.AttendanceRepository;
+import com.schoolsaas.common.enums.AttendanceStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.communication.service.SmsService;
 import com.schoolsaas.enrollment.entity.Student;
@@ -34,7 +35,7 @@ public class AttendanceService {
 
         Attendance saved = attendanceRepository.save(attendance);
 
-        if ("ABSENT".equals(attendance.getStatus())) {
+        if (AttendanceStatus.ABSENT.equals(attendance.getStatus())) {
             sendAbsenceNotification(attendance);
         }
 

@@ -3,7 +3,8 @@
 ## 📊 RÉSUMÉ EXÉCUTIF
 - **27 entités requises** vs **20 implémentées** → 74% ✓
 - **~60 endpoints requis** vs **~25 implémentés** → 42% ✓
-- **Score global : 5.4/10** → MVP INCOMPLET, needs Phase 2/3
+- **10/10 enums implémentés** ✅ NEW
+- **Score global : 6.2/10** → MVP INCOMPLET (enums ajoutés), needs Phase 2/3
 
 ---
 
@@ -89,22 +90,45 @@ Specs exige 4 templates à l'onboarding :
 
 ---
 
-## 2️⃣ ÉNUMÉRATIONS MANQUANTES PARTOUT
+## 2️⃣ ÉNUMÉRATIONS - TOUTES CRÉÉES ✅
 
-Au lieu de `String` (❌ DANGER de typos), utiliser `Enum` (✅ Sécurisé à la compile) :
+**Status:** 10/10 enums créés et implémentés dans les entités
 
-| Où ? | Enum requis | État |
-|------|-------------|------|
-| **StudentEnrollment** | `EnrollmentStatus`, `PromotionStatus` | ❌ String |
-| **StudentFee** | `FeeStatus` | ❌ String |
-| **Payment** | `PaymentMethod`, `PaymentStatus` | ⚠️ PaymentMethod String |
-| **Grade** | `EvaluationType` | ❌ String |
-| **Attendance** | `Period`, `AttendanceStatus` | ❌ String |
-| **SmsLog** | `SmsStatus` | ❌ String |
-| **ReportCard** | `ReportCardStatus` | ❌ String |
-| **FeeStructure** | `FeeType` | ❌ ABSENT |
+Les 10 enums définis dans `src/main/java/com/schoolsaas/common/enums/`:
 
-**Action :** Créer `src/main/java/com/schoolsaas/common/enums/` avec tous les enums.
+| Enum | Valeurs | Utilisation |
+|------|---------|-------------|
+| **EnrollmentStatus** | ACTIVE, INACTIVE, TRANSFERRED, GRADUATED, DROPPED_OUT, SUSPENDED | StudentEnrollment.status |
+| **PromotionStatus** | PROMOTED, RETAINED, CONDITIONAL, PENDING, OVERRIDDEN | StudentEnrollment.promotionStatus |
+| **FeeStatus** | UNPAID, PARTIAL, PAID, OVERDUE, WAIVED, EXEMPTED | StudentFee.status |
+| **FeeType** | TUITION, REGISTRATION, CANTEEN, TRANSPORT, EXAM, ACTIVITY, OTHER | FeeStructure.feeType |
+| **PaymentMethod** | CASH, BANK_TRANSFER, CHECK, CREDIT_CARD, MOBILE_MONEY, WIRE_TRANSFER, CRYPTO | Payment.paymentMethod |
+| **PaymentStatus** | PENDING, CONFIRMED, FAILED, CANCELLED, REFUNDED, PARTIALLY_REFUNDED | Payment.status ✨ NEW |
+| **EvaluationType** | EXAM, CONTINUOUS_ASSESSMENT, ASSIGNMENT, PROJECT, PARTICIPATION, PRACTICAL, QUIZ | Grade.evaluationType |
+| **Period** | MORNING, AFTERNOON, EVENING, FULL_DAY | Attendance.period |
+| **AttendanceStatus** | PRESENT, ABSENT, LATE, EXCUSED, JUSTIFIED, ABSENT_UNJUSTIFIED | Attendance.status |
+| **ReportCardStatus** | DRAFT, GENERATED, PUBLISHED, ARCHIVED, CORRECTED | ReportCard.status |
+| **SmsStatus** | QUEUED, SENT, DELIVERED, FAILED, PENDING, BOUNCED, OPTED_OUT | SmsLog.status |
+
+**Migrations SQL créées :**
+- ✅ V2__create_enums.sql - Crée les 10 types ENUM PostgreSQL
+- ✅ V3__add_enum_columns.sql - Convertit les colonnes String existantes en ENUM + ajoute colonnes manquantes
+
+**Entités mises à jour :**
+- ✅ FeeStructure - feeType devient FeeType enum
+- ✅ Payment - paymentMethod devient PaymentMethod enum + NOUVEAU payment_status
+- ✅ StudentFee - status devient FeeStatus enum
+- ✅ StudentEnrollment - status becomes EnrollmentStatus enum, promotionStatus becomes PromotionStatus enum + transfer_notes ajouté
+- ✅ Grade - evaluationType devient EvaluationType enum
+- ✅ Attendance - period & status deviennent Period & AttendanceStatus enums
+- ✅ ReportCard - status devient ReportCardStatus enum
+- ✅ SmsLog - status devient SmsStatus enum
+
+**Avantages :**
+✅ Compile-time safety (plus de typos)
+✅ DB constraints (PostgreSQL rejette valeurs invalides)
+✅ API validation (Spring valide l'enum au deserialization)
+✅ Meilleure documentation (valeurs explicites)
 
 ---
 
@@ -391,21 +415,21 @@ public ResponseEntity login(...) { ... }
 ## 📋 ACTION PLAN PRIORISÉ
 
 ### 🔴 P0 (Bloque MVP)
-1. [ ] Ajouter `FeeStructure.feeType` + Enum
-2. [ ] Ajouter `Payment.status` + Enum
+1. [x] ✅ Ajouter `FeeStructure.feeType` + Enum
+2. [x] ✅ Ajouter `Payment.status` + Enum
 3. [ ] Implémenter ReportCardService (generate + publish + PDF)
 4. [ ] Implémenter PromotionService
 5. [ ] Créer 6 endpoints F-11 (Frais)
 6. [ ] Créer 8 endpoints F-16 (Bulletins)
 7. [ ] Créer 4 endpoints F-19 (Promotion)
-8. [ ] ✅ Triggers PostgreSQL (déjà implémentés)
+8. [x] ✅ Triggers PostgreSQL (déjà implémentés)
 
 ### 🟠 P1 (Avant prod)
-1. [ ] Convertir TOUS les String → Enum (8 enums)
+1. [x] ✅ Convertir TOUS les String → Enum (10/10 enums créés + migrations SQL)
 2. [ ] Ajouter @ManyToOne relations Hibernate
 3. [ ] Créer tous les Mappers DTOs
 4. [ ] Implémenter SmsScheduler
-5. [ ] ✅ Vue matérialisée dashboard (déjà implémentée)
+5. [x] ✅ Vue matérialisée dashboard (déjà implémentée)
 6. [ ] Ajouter validations (phone, slug, coefficient)
 7. [ ] Fixer tests cassés
 8. [ ] Ajouter rate-limiting endpoints publics
@@ -426,7 +450,7 @@ public ResponseEntity login(...) { ... }
 |----------|---------|---|
 | Entités complètes | 14/27 | 52% |
 | Endpoints implémentés | 25/60 | 42% |
-| Enums définis | 0/8 | 0% ⚠️ |
+| Enums définis | **10/10** | **100% ✅** |
 | Mappers créés | 3/20 | 15% ⚠️ |
 | Relations @ManyToOne | 2/8 | 25% ⚠️ |
 | Tests passants | 33/38 | 87% ⚠️ |

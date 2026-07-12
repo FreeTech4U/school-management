@@ -1,13 +1,13 @@
 package com.schoolsaas.finance.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.FeeStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -42,7 +42,8 @@ public class StudentFee extends BaseEntity {
     private LocalDate dueDate;
 
     @Column(nullable = false)
-    private String status = "UNPAID"; // UNPAID, PARTIAL, PAID, OVERDUE, WAIVED
+    @Enumerated(EnumType.STRING)
+    private FeeStatus status = FeeStatus.UNPAID;
 
     @Column(name = "last_reminder_sent_at")
     private Instant lastReminderSentAt;

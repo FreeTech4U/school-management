@@ -1,6 +1,7 @@
 package com.schoolsaas.communication.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.SmsStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,7 +32,8 @@ public class SmsLog extends BaseEntity {
     private String providerMessageId;
 
     @Column(nullable = false)
-    private String status = "PENDING"; // PENDING, SENT, DELIVERED, FAILED
+    @Enumerated(EnumType.STRING)
+    private SmsStatus status = SmsStatus.PENDING;
 
     @Column(name = "error_code")
     private String errorCode;

@@ -1,6 +1,7 @@
 package com.schoolsaas.grading.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.ReportCardStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -39,7 +40,8 @@ public class ReportCard extends BaseEntity {
     private String directorComment;
 
     @Column(nullable = false)
-    private String status = "DRAFT"; // DRAFT, PUBLISHED, SENT_TO_PARENT
+    @Enumerated(EnumType.STRING)
+    private ReportCardStatus status = ReportCardStatus.DRAFT;
 
     @Column(name = "pdf_url")
     private String pdfUrl;

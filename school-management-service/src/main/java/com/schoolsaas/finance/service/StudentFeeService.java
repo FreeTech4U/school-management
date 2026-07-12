@@ -2,6 +2,7 @@ package com.schoolsaas.finance.service;
 
 import com.schoolsaas.academic.entity.SchoolClass;
 import com.schoolsaas.academic.repository.SchoolClassRepository;
+import com.schoolsaas.common.enums.FeeStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import com.schoolsaas.finance.entity.FeeStructure;
@@ -41,7 +42,7 @@ public class StudentFeeService {
                         .amountPaid(BigDecimal.ZERO)
                         .discountAmount(BigDecimal.ZERO)
                         .dueDate(fs.getDueDate())
-                        .status("UNPAID")
+                        .status(FeeStatus.UNPAID)
                         .build())
                 .collect(Collectors.toList());
         
@@ -57,7 +58,7 @@ public class StudentFeeService {
         StudentFee fee = studentFeeRepository.findById(feeId)
                 .orElseThrow(() -> BusinessException.notFound("FEE_NOT_FOUND", "Frais introuvable"));
         
-        if ("PAID".equals(fee.getStatus())) {
+        if (FeeStatus.PAID.equals(fee.getStatus())) {
             throw new BusinessException("FEE_ALREADY_PAID", "Impossible d'appliquer une remise sur un frais déjà payé");
         }
         
@@ -67,7 +68,7 @@ public class StudentFeeService {
         // Status will be recalculated by trigger or we can do it here too
         BigDecimal remaining = fee.getAmountDue().subtract(discountAmount).subtract(fee.getAmountPaid());
         if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
-            fee.setStatus("PAID");
+            fee.setStatus(FeeStatus.PAID);
         }
         
         studentFeeRepository.save(fee);

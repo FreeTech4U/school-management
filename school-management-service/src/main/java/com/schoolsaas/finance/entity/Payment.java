@@ -1,6 +1,8 @@
 package com.schoolsaas.finance.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.PaymentMethod;
+import com.schoolsaas.common.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,7 +33,12 @@ public class Payment extends BaseEntity {
     private LocalDateTime paymentDate;
 
     @Column(name = "payment_method", nullable = false)
-    private String paymentMethod; // CASH, ORANGE_MONEY, MTN_MONEY, WAVE, BANK_TRANSFER, CHECK
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "payment_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus status = PaymentStatus.PENDING;
 
     @Column(name = "reference_number")
     private String referenceNumber;

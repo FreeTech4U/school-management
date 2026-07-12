@@ -1,6 +1,8 @@
 package com.schoolsaas.enrollment.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.EnrollmentStatus;
+import com.schoolsaas.common.enums.PromotionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,11 +35,16 @@ public class StudentEnrollment extends BaseEntity {
     private Boolean isRepeating = false;
 
     @Column(nullable = false)
-    private String status = "ENROLLED"; // ENROLLED, TRANSFERRED, WITHDRAWN, GRADUATED
+    @Enumerated(EnumType.STRING)
+    private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
 
     @Column(name = "promotion_status")
-    private String promotionStatus = "PENDING"; // PENDING, PROMOTED, REPEATED, GRADUATED
+    @Enumerated(EnumType.STRING)
+    private PromotionStatus promotionStatus = PromotionStatus.PENDING;
 
     @Column(name = "final_average")
     private BigDecimal finalAverage;
+
+    @Column(name = "transfer_notes")
+    private String transferNotes;
 }

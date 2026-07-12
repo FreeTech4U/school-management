@@ -1,6 +1,7 @@
 package com.schoolsaas.finance.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.FeeType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,7 +25,8 @@ public class FeeStructure extends BaseEntity {
     private UUID classId; // null = all classes
 
     @Column(name = "fee_type", nullable = false)
-    private String feeType; // TUITION, REGISTRATION, CANTEEN, TRANSPORT, EXAM
+    @Enumerated(EnumType.STRING)
+    private FeeType feeType;
 
     @Column(nullable = false)
     private String label;

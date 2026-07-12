@@ -1,5 +1,7 @@
 package com.schoolsaas.finance.service;
 
+import com.schoolsaas.common.enums.FeeStatus;
+import com.schoolsaas.common.enums.PaymentMethod;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.finance.dto.request.CreatePaymentRequest;
 import com.schoolsaas.finance.dto.response.PaymentResponse;
@@ -44,7 +46,7 @@ public class PaymentService {
                 .studentId(request.getStudentId())
                 .amount(request.getAmount())
                 .paymentDate(request.getPaymentDate().atStartOfDay()) // Simplification
-                .paymentMethod(request.getPaymentMethod())
+                .paymentMethod(PaymentMethod.valueOf(request.getPaymentMethod()))
                 .referenceNumber(request.getReferenceNumber())
                 .notes(request.getNotes())
                 .allocations(new ArrayList<>())
@@ -55,7 +57,7 @@ public class PaymentService {
             StudentFee fee = studentFeeRepository.findById(allocReq.getStudentFeeId())
                     .orElseThrow(() -> BusinessException.notFound("FEE_NOT_FOUND", "Frais introuvable: " + allocReq.getStudentFeeId()));
 
-            if ("PAID".equals(fee.getStatus())) {
+            if (FeeStatus.PAID.equals(fee.getStatus())) {
                 throw new BusinessException("FEE_ALREADY_PAID", "Le frais " + fee.getFeeStructure().getLabel() + " est déjà payé");
             }
 
@@ -121,7 +123,7 @@ public class PaymentService {
                 .studentId(p.getStudentId())
                 .amount(p.getAmount())
                 .paymentDate(p.getPaymentDate())
-                .paymentMethod(p.getPaymentMethod())
+                .paymentMethod(p.getPaymentMethod().name())
                 .referenceNumber(p.getReferenceNumber())
                 .receiptNumber(p.getReceiptNumber())
                 .allocations(p.getAllocations().stream()

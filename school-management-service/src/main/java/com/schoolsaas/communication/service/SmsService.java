@@ -1,5 +1,6 @@
 package com.schoolsaas.communication.service;
 
+import com.schoolsaas.common.enums.SmsStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.communication.entity.SmsLog;
 import com.schoolsaas.communication.entity.SmsTemplate;
@@ -41,7 +42,7 @@ public class SmsService {
                     .recipientPhone(phone)
                     .message(message)
                     .provider(smsProvider.getProviderName())
-                    .status("PENDING")
+                    .status(SmsStatus.PENDING)
                     .build();
             smsLog = smsLogRepository.save(smsLog);
 
@@ -49,10 +50,10 @@ public class SmsService {
 
             smsLog.setProviderMessageId(result.getProviderMessageId());
             if (result.isSuccess()) {
-                smsLog.setStatus("SENT");
+                smsLog.setStatus(SmsStatus.SENT);
                 smsLog.setSentAt(LocalDateTime.now());
             } else {
-                smsLog.setStatus("FAILED");
+                smsLog.setStatus(SmsStatus.FAILED);
                 smsLog.setErrorCode(result.getErrorCode());
                 smsLog.setErrorMessage(result.getErrorMessage());
             }

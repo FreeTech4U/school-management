@@ -1,6 +1,7 @@
 package com.schoolsaas.grading.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.EvaluationType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,7 +31,8 @@ public class Grade extends BaseEntity {
     private BigDecimal value;
 
     @Column(name = "evaluation_type", nullable = false)
-    private String evaluationType; // DEVOIR, COMPOSITION, ORAL, TP
+    @Enumerated(EnumType.STRING)
+    private EvaluationType evaluationType;
 
     @Column(name = "evaluation_label", nullable = false)
     private String evaluationLabel;

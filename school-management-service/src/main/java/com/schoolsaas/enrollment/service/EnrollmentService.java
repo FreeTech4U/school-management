@@ -4,6 +4,8 @@ import com.schoolsaas.academic.entity.AcademicYear;
 import com.schoolsaas.academic.entity.SchoolClass;
 import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.SchoolClassRepository;
+import com.schoolsaas.common.enums.EnrollmentStatus;
+import com.schoolsaas.common.enums.PromotionStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.dto.request.EnrollStudentRequest;
 import com.schoolsaas.enrollment.dto.response.EnrollmentResponse;
@@ -57,8 +59,8 @@ public class EnrollmentService {
                 .academicYearId(year.getId())
                 .enrollmentDate(request.getEnrollmentDate())
                 .isRepeating(request.getIsRepeating())
-                .status("ENROLLED")
-                .promotionStatus("PENDING")
+                .status(EnrollmentStatus.ACTIVE)
+                .promotionStatus(PromotionStatus.PENDING)
                 .build();
 
         enrollment = enrollmentRepository.save(enrollment);
@@ -86,7 +88,8 @@ public class EnrollmentService {
     public void transferStudent(UUID enrollmentId, String reason) {
         StudentEnrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> BusinessException.notFound("ENROLLMENT_NOT_FOUND", "Inscription introuvable"));
-        enrollment.setStatus("TRANSFERRED");
+        enrollment.setStatus(EnrollmentStatus.TRANSFERRED);
+        enrollment.setTransferNotes(reason);
         enrollmentRepository.save(enrollment);
     }
 
@@ -94,7 +97,7 @@ public class EnrollmentService {
     public void withdrawStudent(UUID enrollmentId) {
         StudentEnrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> BusinessException.notFound("ENROLLMENT_NOT_FOUND", "Inscription introuvable"));
-        enrollment.setStatus("WITHDRAWN");
+        enrollment.setStatus(EnrollmentStatus.DROPPED_OUT);
         enrollmentRepository.save(enrollment);
     }
 
@@ -110,8 +113,8 @@ public class EnrollmentService {
                 .academicYearLabel(y != null ? y.getLabel() : "Unknown")
                 .enrollmentDate(e.getEnrollmentDate())
                 .isRepeating(e.getIsRepeating())
-                .status(e.getStatus())
-                .promotionStatus(e.getPromotionStatus())
+                .status(e.getStatus().name())
+                .promotionStatus(e.getPromotionStatus().name())
                 .finalAverage(e.getFinalAverage())
                 .build();
     }
