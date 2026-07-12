@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -44,5 +45,5 @@ public class StudentFee extends BaseEntity {
     private String status = "UNPAID"; // UNPAID, PARTIAL, PAID, OVERDUE, WAIVED
 
     @Column(name = "last_reminder_sent_at")
-    private LocalDateTime lastReminderSentAt;
+    private Instant lastReminderSentAt;
 }

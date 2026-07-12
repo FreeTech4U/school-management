@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/school_saas}
+    username: ${DATABASE_USERNAME:admin}
+    password: ${DATABASE_PASSWORD:admin}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+  flyway:
+    # En dev on tolère qu'un script déjà appliqué ait été modifié —
+    # ça évite de devoir DROP le schema à chaque itération.
+    validate-on-migrate: false
+    clean-disabled: false        # permet mvn flyway:clean pour repartir de zéro
+
+server:
+  error:
+    include-message: always
+    include-stacktrace: on_param   # ?trace=true pour voir la stack
+
+app:
+  jwt:
+    # Secret de dev uniquement. En prod, JWT_SECRET est obligatoire (pas de défaut).
+    # Générer le tien : openssl rand -hex 32
+    secret: ${JWT_SECRET:8c5614d739143a50dfb5741ba67feefad75940f8eb346cc6bd75c2d0f387d02c}
+  cors:
+    allowed-origins:
+      - http://localhost:4200
+      - http://localhost:3000
+      - http://localhost:8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.schoolsaas: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE   # affiche les valeurs des paramètres ?
+    org.flywaydb: DEBUG

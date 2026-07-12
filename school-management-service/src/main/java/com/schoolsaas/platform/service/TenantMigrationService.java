@@ -7,6 +7,10 @@ import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 
+/**
+ * Service technique chargé d'appliquer les migrations de base de données (Flyway)
+ * sur les schémas spécifiques des écoles (tenants).
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -14,6 +18,12 @@ public class TenantMigrationService {
 
     private final DataSource dataSource;
 
+    /**
+     * Applique ou met à jour le schéma de base de données pour un tenant donné.
+     * Utilise les scripts situés dans `db/migration/tenant`.
+     *
+     * @param schemaName Nom du schéma PostgreSQL à migrer.
+     */
     public void migrateTenant(String schemaName) {
         log.info("Applying Flyway migrations to schema: {}", schemaName);
 

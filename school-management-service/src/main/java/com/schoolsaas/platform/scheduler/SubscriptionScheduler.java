@@ -11,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Planificateur de tâches pour la gestion des abonnements.
+ * Gère les expirations automatiques et les changements de statut.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -18,6 +22,10 @@ public class SubscriptionScheduler {
 
     private final SchoolSubscriptionRepository subscriptionRepository;
 
+    /**
+     * Vérifie quotidiennement les abonnements arrivés à échéance.
+     * Si un abonnement est expiré, le statut de l'école passe en "suspended".
+     */
     @Scheduled(cron = "0 0 1 * * *") // Every day at 1 AM
     @Transactional
     public void checkExpirations() {

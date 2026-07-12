@@ -1,82 +1,111 @@
 spring:
   application:
     name: schoolsaas-backend
+
+  # Le profil vient de l'environnement. Pas de valeur par défaut "dev"
+  # pour éviter de démarrer en dev par accident sur le VPS.
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/school_saas}
-    username: ${DATABASE_USERNAME:admin}
-    password: ${DATABASE_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: SchoolSaaS-Pool
+      connection-timeout: 20000      # 20s max pour obtenir une connexion
+      max-lifetime: 1200000          # 20 min — recyclage des connexions
+      idle-timeout: 300000           # 5 min
+
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: none                 # Flyway gère le schéma, jamais Hibernate
+    # Ferme la session Hibernate à la fin du service, pas à la fin de la requête HTTP.
+    # Évite de monopoliser une connexion du pool pendant la sérialisation JSON.
+    open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        show_sql: true
+        # IMPORTANT : ne PAS déclarer ici tenant_identifier_resolver ni
+        # multi_tenant_connection_provider. Hibernate instancierait les classes
+        # lui-même (sans Spring) et le DataSource injecté serait null.
+        # Spring Boot 3 détecte automatiquement les beans @Component.
         multiTenancy: SCHEMA
+        jdbc:
+          batch_size: 50
+          time_zone: UTC
+        order_inserts: true
+        order_updates: true
+
   flyway:
     enabled: true
     baseline-on-migrate: true
-    validate-on-migrate: false
     locations: classpath:db/migration/public
     schemas: public
+
   servlet:
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
+
   jackson:
     default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false   # dates en ISO-8601, pas en epoch
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: UTC
 
 server:
-  port: 8080
-  error:
-    include-message: always
+  port: ${SERVER_PORT:8080}
 
 app:
   jwt:
-    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-    access-token-expiration: 3600000 # 1h
-    refresh-token-expiration: 604800000 # 7j
+    # PAS de valeur par défaut : si JWT_SECRET est absent, l'app refuse de démarrer.
+    # C'est voulu — mieux vaut un crash au boot qu'un secret public en prod.
+    secret: ${JWT_SECRET}
+    access-token-expiration: 3600000     # 1 h
+    refresh-token-expiration: 604800000  # 7 j
+    issuer: schoolsaas-api
+
+  multitenancy:
+    default-schema: public
+
   sms:
     provider: ${SMS_PROVIDER:logging}
+    orange:
+      base-url: https://api.orange.com
+      client-id: ${ORANGE_CLIENT_ID:}
+      client-secret: ${ORANGE_CLIENT_SECRET:}
+      sender: SchoolSaaS
+
   storage:
     provider: ${STORAGE_PROVIDER:local}
     local:
       base-path: ${LOCAL_STORAGE_PATH:./uploads}
+
+  scheduler:
+    dashboard-refresh:
+      cron: "0 */15 * * * *"     # toutes les 15 min
+    fee-reminder:
+      cron: "0 0 8 * * MON-FRI"  # 8h du lundi au vendredi
+    overdue-fees:
+      cron: "0 0 0 * * *"        # minuit
 
 springdoc:
   api-docs:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-    config-url: /v3/api-docs/swagger-config
-    url: /v3/api-docs
-    operationsSorter: alpha
-    tagsSorter: alpha
-  show-actuator: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,info
-  endpoint:
-    health:
-      show-details: always
+        include: health,info
 
----
-spring:
-  config:
-    activate:
-      on-profile: prod
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: false
-  flyway:
-    enabled: true
-
-server:
-  port: 8080
+logging:
+  pattern:
+    # Le tenantId dans chaque ligne de log : indispensable pour débugger
+    # quelle école a un problème. Alimenté par le MDC dans JwtAuthenticationFilter.
+    console: "%d{HH:mm:ss} [%X{tenantId:-system}] %-5level %logger{36} - %msg%n"

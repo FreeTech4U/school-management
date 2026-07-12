@@ -1,0 +1,79 @@
+spring:
+  datasource:
+    # AUCUNE valeur par défaut : si une variable manque, l'app refuse de démarrer.
+    # Un crash au boot est préférable à une connexion sur la mauvaise base.
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      leak-detection-threshold: 30000   # alerte si une connexion n'est pas rendue en 30s
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    # En prod, la validation des checksums est OBLIGATOIRE.
+    # Elle détecte si un script déjà appliqué a été modifié après coup.
+    validate-on-migrate: true
+    clean-disabled: true       # interdit tout flyway:clean accidentel
+
+server:
+  error:
+    # Ne jamais renvoyer le message d'exception au client :
+    # ça fuite les noms de tables, contraintes SQL, chemins de fichiers...
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  compression:
+    enabled: true
+    mime-types: application/json
+  tomcat:
+    threads:
+      max: 100
+
+app:
+  cors:
+    # Origines strictes. Pas de localhost, pas de wildcard.
+    allowed-origins:
+      - ${FRONTEND_URL}
+
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+    local:
+      base-path: ${LOCAL_STORAGE_PATH:/var/schoolsaas/uploads}
+
+# Swagger désactivé en prod : inutile d'exposer publiquement
+# la cartographie complète de l'API.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health          # rien d'autre exposé
+  endpoint:
+    health:
+      show-details: when-authorized   # les détails DB seulement si authentifié
+      probes:
+        enabled: true                 # /health/liveness et /health/readiness
+
+logging:
+  level:
+    root: WARN
+    com.schoolsaas: INFO
+    org.hibernate.SQL: WARN
+  file:
+    name: /var/log/schoolsaas/application.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30              # 30 jours de rétention

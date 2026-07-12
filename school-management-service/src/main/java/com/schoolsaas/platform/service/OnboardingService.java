@@ -20,6 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+/**
+ * Service responsable de l'onboarding des nouvelles écoles sur la plateforme.
+ * Gère la création de l'école, de son schéma de base de données, de son abonnement
+ * et du compte utilisateur administrateur (Directeur).
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,13 @@ public class OnboardingService {
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Initialise une nouvelle école et son environnement technique complet.
+     *
+     * @param request Données d'inscription de l'école et du directeur.
+     * @return Réponse contenant les détails de l'onboarding réussi.
+     * @throws BusinessException si le slug ou l'email est déjà utilisé.
+     */
     @Transactional
     public OnboardingResponse onboard(OnboardingRequest request) {
         log.info("Starting onboarding for school: {}", request.getSchoolName());
@@ -91,6 +103,12 @@ public class OnboardingService {
                 .build();
     }
 
+    /**
+     * Crée le compte utilisateur du directeur dans le schéma spécifique de l'école.
+     *
+     * @param schemaName Nom du schéma PostgreSQL de l'école.
+     * @param request Données de l'onboarding contenant les infos du directeur.
+     */
     private void createDirector(String schemaName, OnboardingRequest request) {
         String sql = "INSERT INTO " + schemaName + ".users (first_name, last_name, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?, ?)";
         jdbcTemplate.update(sql,

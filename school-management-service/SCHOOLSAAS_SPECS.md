@@ -1,4 +1,4 @@
-# SchoolSaaS — Spécifications complètes pour génération de code
+ # SchoolSaaS — Spécifications complètes pour génération de code
 
 ## CONTEXTE TECHNIQUE
 
