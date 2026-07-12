@@ -1,159 +1,195 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
-import { Observable, delay, map, of } from 'rxjs';
+import { catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { LoginCredentials } from '../../features/auth/models/login-credentials.model';
-import { MockAuthSession, MockAuthUser, MockAuthRole, MockTokenPayload } from './models/auth.models';
-
-interface DemoAccount {
-  identifier: string;
-  fullName: string;
-  role: MockAuthRole;
-}
+import { ApiResponse, AuthResponse, LoginRequest, OnboardingRequest, OnboardingResponse, UserData } from '../models';
+import { MockAuthRole, MockAuthUser } from './models/auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly tokenKey = 'auth.token';
-  private readonly demoPassword = 'School@123';
-  private readonly demoAccounts: DemoAccount[] = [
-    { identifier: 'admin@school.com', fullName: 'Administrateur Demo', role: 'administrator' },
-    { identifier: 'compta@school.com', fullName: 'Comptable Demo', role: 'accountant' },
-    { identifier: '+2250102030405', fullName: 'Direction Demo', role: 'director' }
-  ];
+  private readonly authBaseUrl = 'http://localhost:8080/api/v1/auth';
+  private readonly platformBaseUrl = 'http://localhost:8080/api/v1/platform';
+  private readonly accessTokenKey = 'auth.accessToken';
+  private readonly refreshTokenKey = 'auth.refreshToken';
+  private readonly expiresAtKey = 'auth.expiresAt';
+  private readonly userKey = 'auth.user';
+  private readonly tenantSlugKey = 'auth.tenantSlug';
+  private refreshTokenRequest$: Observable<string> | null = null;
 
-  readonly currentUser = signal<MockAuthUser | null>(this.restoreUser());
+  readonly currentUser = signal<MockAuthUser | null>(null);
 
-  login(credentials: LoginCredentials): Observable<MockAuthSession> {
-    const normalizedIdentifier = this.normalizeIdentifier(credentials.identifier);
+  constructor(private readonly http: HttpClient) {
+    this.currentUser.set(this.restoreUser());
+  }
 
-    return of({
-      identifier: normalizedIdentifier,
+  login(credentials: LoginCredentials): Observable<AuthResponse> {
+    const request: LoginRequest = {
+      tenantSlug: this.getTenantSlug(),
+      email: credentials.identifier.trim(),
       password: String(credentials.password ?? '')
-    }).pipe(
-      delay(500),
-      map(({ identifier, password }) => {
-        const matchedAccount = this.demoAccounts.find(
-          (account) => this.normalizeIdentifier(account.identifier) === identifier
-        );
+    };
 
-        if (!matchedAccount || password !== this.demoPassword) {
-          throw new Error('INVALID_CREDENTIALS');
-        }
+    return this.loginWithRequest(request);
+  }
 
-        const user: MockAuthUser = {
-          id: matchedAccount.identifier,
-          fullName: matchedAccount.fullName,
-          identifier: matchedAccount.identifier,
-          role: matchedAccount.role
-        };
+  loginWithRequest(request: LoginRequest): Observable<AuthResponse> {
+    this.setTenantSlug(request.tenantSlug);
 
-        const session: MockAuthSession = {
-          token: this.createToken(user),
-          user,
-          expiresIn: 86_400
-        };
-
-        this.persistSession(session);
-        this.currentUser.set(user);
-
-        return session;
-      })
+    return this.http.post<ApiResponse<AuthResponse>>(`${this.authBaseUrl}/login`, request).pipe(
+      map((response) => response.data),
+      tap((session) => this.persistSession(session))
     );
   }
 
-  logout(): void {
-    sessionStorage.removeItem(this.tokenKey);
-    this.currentUser.set(null);
+  register(request: OnboardingRequest): Observable<OnboardingResponse> {
+    return this.http.post<ApiResponse<OnboardingResponse>>(`${this.platformBaseUrl}/onboard`, request).pipe(
+      map((response) => response.data)
+    );
+  }
+
+  requestLogout(): Observable<void> {
+    const hasAccessToken = Boolean(this.getAccessToken());
+
+    if (!hasAccessToken) {
+      this.clearSession();
+      return of(void 0);
+    }
+
+    return this.http.post<ApiResponse<unknown>>(`${this.authBaseUrl}/logout`, {}).pipe(
+      map(() => void 0),
+      finalize(() => this.clearSession())
+    );
+  }
+
+  refreshAccessToken(): Observable<string> {
+    const refreshToken = this.getRefreshToken();
+
+    if (!refreshToken) {
+      return throwError(() => new Error('AUTH_REFRESH_TOKEN_MISSING'));
+    }
+
+    if (this.refreshTokenRequest$) {
+      return this.refreshTokenRequest$;
+    }
+
+    const payload: Record<string, string> = { refreshToken };
+
+    this.refreshTokenRequest$ = this.http
+      .post<ApiResponse<AuthResponse>>(`${this.authBaseUrl}/refresh`, payload)
+      .pipe(
+        map((response) => response.data),
+        tap((session) => this.persistSession(session)),
+        map((session) => session.accessToken),
+        finalize(() => {
+          this.refreshTokenRequest$ = null;
+        }),
+        shareReplay(1)
+      );
+
+    return this.refreshTokenRequest$;
   }
 
   isAuthenticated(): boolean {
-    const token = sessionStorage.getItem(this.tokenKey);
-    if (!token) {
-      return false;
-    }
-
-    const payload = this.decodeToken(token);
-    if (!payload || payload.exp * 1000 <= Date.now()) {
-      this.logout();
-      return false;
-    }
-
-    return Boolean(this.currentUser());
+    return Boolean(this.getAccessToken()) && !this.isTokenExpired() && Boolean(this.currentUser());
   }
 
-  getUser(): MockAuthUser | null {
-    return this.currentUser();
+  loadSession(): Observable<UserData | null> {
+    const userData = this.restoreUserData();
+
+    if (!userData || this.isTokenExpired()) {
+      this.clearSession();
+      return of(null);
+    }
+
+    this.currentUser.set(this.toAuthUser(userData));
+    return of(userData);
   }
 
   getCurrentRole(): MockAuthRole | null {
     return this.currentUser()?.role ?? null;
   }
 
+  getAccessToken(): string | null {
+    return sessionStorage.getItem(this.accessTokenKey);
+  }
+
+  clearSession(): void {
+    sessionStorage.removeItem(this.accessTokenKey);
+    sessionStorage.removeItem(this.refreshTokenKey);
+    sessionStorage.removeItem(this.expiresAtKey);
+    sessionStorage.removeItem(this.userKey);
+    this.currentUser.set(null);
+  }
+
   private restoreUser(): MockAuthUser | null {
-    const token = sessionStorage.getItem(this.tokenKey);
-    if (!token) {
+    const userData = this.restoreUserData();
+
+    if (!userData || this.isTokenExpired()) {
       return null;
     }
 
-    const payload = this.decodeToken(token);
-    if (!payload || payload.exp * 1000 <= Date.now()) {
-      this.logout();
-      return null;
-    }
-
-    return {
-      id: payload.sub,
-      fullName: payload.fullName,
-      identifier: payload.identifier,
-      role: payload.role
-    };
+    return this.toAuthUser(userData);
   }
 
-  private persistSession(session: MockAuthSession): void {
-    sessionStorage.setItem(this.tokenKey, session.token);
-  }
-
-  private normalizeIdentifier(identifier: string): string {
-    const trimmedValue = identifier.trim();
-    return trimmedValue.includes('@') ? trimmedValue.toLowerCase() : trimmedValue.replace(/[\s().-]/g, '');
-  }
-
-  private createToken(user: MockAuthUser): string {
-    const header = this.toBase64Url({ alg: 'none', typ: 'JWT' });
-    const payload = this.toBase64Url({
-      sub: user.id,
-      fullName: user.fullName,
-      identifier: user.identifier,
-      role: user.role,
-      exp: Math.floor(Date.now() / 1000) + 86_400
-    });
-
-    return `${header}.${payload}.mock-signature`;
-  }
-
-  private decodeToken(token: string): MockTokenPayload | null {
-    const parts = token.split('.');
-    if (parts.length < 2) {
+  private restoreUserData(): UserData | null {
+    const serializedUser = sessionStorage.getItem(this.userKey);
+    if (!serializedUser) {
       return null;
     }
 
     try {
-      const decodedPayload = JSON.parse(this.fromBase64Url(parts[1])) as MockTokenPayload;
-      return decodedPayload;
+      return JSON.parse(serializedUser) as UserData;
     } catch {
       return null;
     }
   }
 
-  private toBase64Url(value: unknown): string {
-    const jsonValue = JSON.stringify(value);
-    const base64 = btoa(unescape(encodeURIComponent(jsonValue)));
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  private persistSession(session: AuthResponse): void {
+    sessionStorage.setItem(this.accessTokenKey, session.accessToken);
+    sessionStorage.setItem(this.refreshTokenKey, session.refreshToken);
+    sessionStorage.setItem(this.expiresAtKey, String(Date.now() + session.expiresIn * 1000));
+    sessionStorage.setItem(this.userKey, JSON.stringify(session.user));
+    this.currentUser.set(this.toAuthUser(session.user));
   }
 
-  private fromBase64Url(value: string): string {
-    const normalizedValue = value.replace(/-/g, '+').replace(/_/g, '/');
-    const paddedValue = normalizedValue + '='.repeat((4 - (normalizedValue.length % 4)) % 4);
-    return decodeURIComponent(escape(atob(paddedValue)));
+  private getRefreshToken(): string | null {
+    return sessionStorage.getItem(this.refreshTokenKey);
+  }
+
+  private isTokenExpired(): boolean {
+    const rawExpiresAt = sessionStorage.getItem(this.expiresAtKey);
+    if (!rawExpiresAt) {
+      return true;
+    }
+
+    const expiresAt = Number(rawExpiresAt);
+    return Number.isNaN(expiresAt) || Date.now() >= expiresAt;
+  }
+
+  private toAuthUser(user: UserData): MockAuthUser {
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      identifier: user.email,
+      role: this.resolveRole(user.roles)
+    };
+  }
+
+  private resolveRole(roles: string[]): MockAuthRole {
+    const normalized = roles.map((r) => r.toLowerCase());
+
+    if (normalized.includes('director')) return 'director';
+    if (normalized.includes('accountant')) return 'accountant';
+
+    return 'administrator';
+  }
+
+  private getTenantSlug(): string {
+    return sessionStorage.getItem(this.tenantSlugKey) ?? '';
+  }
+
+  private setTenantSlug(slug: string): void {
+    sessionStorage.setItem(this.tenantSlugKey, slug.trim());
   }
 }
-

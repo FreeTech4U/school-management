@@ -17,65 +17,77 @@
     <div class="login-card">
       <h2>{{ 'login.form.title' | translate }}</h2>
       <p class="helper">{{ 'login.form.helper' | translate }}</p>
-      <p class="mock-hint">{{ 'login.form.mockHint' | translate }}</p>
 
-      @if (authError()) {
-        <p class="field-error field-error-global">{{ authError() | translate }}</p>
+      @if (authError$ | async; as authError) {
+        <p-message
+          severity="error"
+          [text]="authError | translate"
+          styleClass="error-message"
+        />
       }
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
-        <label for="identifier">{{ 'login.form.identifierLabel' | translate }}</label>
-        <input
-          id="identifier"
-          type="text"
-          formControlName="identifier"
-          [attr.placeholder]="'login.form.identifierPlaceholder' | translate"
-          autocomplete="username"
-        />
-        @if (isInvalid('identifier')) {
-          @if (loginForm.controls.identifier.errors?.['required']) {
-            <p class="field-error">{{ 'login.form.errors.identifierRequired' | translate }}</p>
+        <div class="form-group">
+          <label for="identifier">{{ 'login.form.identifierLabel' | translate }}</label>
+          <input
+            id="identifier"
+            pInputText
+            type="text"
+            formControlName="identifier"
+            [placeholder]="'login.form.identifierPlaceholder' | translate"
+            autocomplete="username"
+            class="w-100"
+          />
+          @if (isInvalid('identifier')) {
+            @if (loginForm.controls.identifier.errors?.['required']) {
+              <small class="field-error">{{ 'login.form.errors.identifierRequired' | translate }}</small>
+            }
+            @if (loginForm.controls.identifier.errors?.['invalidIdentifier']) {
+              <small class="field-error">{{ 'login.form.errors.identifierInvalid' | translate }}</small>
+            }
           }
-          @if (loginForm.controls.identifier.errors?.['invalidIdentifier']) {
-            <p class="field-error">{{ 'login.form.errors.identifierInvalid' | translate }}</p>
-          }
-        }
+        </div>
 
-        <label for="password">{{ 'login.form.passwordLabel' | translate }}</label>
-        <input
-          id="password"
-          type="password"
-          formControlName="password"
-          [attr.placeholder]="'login.form.passwordPlaceholder' | translate"
-          autocomplete="current-password"
-        />
-        @if (isInvalid('password')) {
-          @if (loginForm.controls.password.errors?.['required']) {
-            <p class="field-error">{{ 'login.form.errors.passwordRequired' | translate }}</p>
+        <div class="form-group">
+          <label for="password">{{ 'login.form.passwordLabel' | translate }}</label>
+          <input
+            id="password"
+            pInputText
+            type="password"
+            formControlName="password"
+            [placeholder]="'login.form.passwordPlaceholder' | translate"
+            autocomplete="current-password"
+            class="w-100"
+          />
+          @if (isInvalid('password')) {
+            @if (loginForm.controls.password.errors?.['required']) {
+              <small class="field-error">{{ 'login.form.errors.passwordRequired' | translate }}</small>
+            }
+            @if (loginForm.controls.password.errors?.['minlength']) {
+              <small class="field-error">{{ 'login.form.errors.passwordMinLength' | translate }}</small>
+            }
           }
-          @if (loginForm.controls.password.errors?.['minlength']) {
-            <p class="field-error">{{ 'login.form.errors.passwordMinLength' | translate }}</p>
-          }
-        }
+        </div>
 
-        <button type="submit" class="btn btn-primary submit-btn" [disabled]="isSubmitting()">
-          {{ (isSubmitting() ? 'login.form.submitLoading' : 'login.form.submit') | translate }}
-        </button>
+        <p-button
+          type="submit"
+          [label]="(isLoading$ | async) ? ('login.form.submitLoading' | translate) : ('login.form.submit' | translate)"
+          [loading]="isLoading$ | async"
+          [disabled]="loginForm.invalid || (isLoading$ | async)"
+          styleClass="w-100 submit-btn"
+          icon="pi pi-sign-in"
+          iconPos="right"
+        />
       </form>
 
-      <div class="demo-accounts">
-        <h3>{{ 'login.form.demoAccountsTitle' | translate }}</h3>
-        <ul>
-          <li>admin@school.com / School@123</li>
-          <li>compta@school.com / School@123</li>
-          <li>+2250102030405 / School@123</li>
-        </ul>
-      </div>
-
       <a class="back-home" routerLink="/">{{ 'login.form.backHome' | translate }}</a>
+
+      <div class="back-to-register">
+        <p>{{ 'login.form.noAccount' | translate }}</p>
+        <a routerLink="/register" class="register-link">{{ 'login.form.createAccount' | translate }}</a>
+      </div>
     </div>
   </section>
 </main>
 
 <app-footer />
-

@@ -1,11 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Router, RouterLink } from '@angular/router';
+import { Store } from '@ngrx/store';
 
 import { AuthService } from '../../auth/auth.service';
 import { LanguageService } from '../../i18n/language.service';
 import { NavigationService } from '../../navigation/navigation.service';
 import { NavItem } from '../../navigation/models/nav-item.model';
+import { authActions } from '../../../store/auth';
 
 @Component({
   selector: 'app-header',
@@ -14,12 +16,11 @@ import { NavItem } from '../../navigation/models/nav-item.model';
   styleUrl: './header.component.css'
 })
 export class HeaderComponent {
-  constructor(
-    private readonly languageService: LanguageService,
-    private readonly authService: AuthService,
-    private readonly navigationService: NavigationService,
-    private readonly router: Router
-  ) {}
+  private readonly languageService = inject(LanguageService);
+  private readonly authService = inject(AuthService);
+  private readonly navigationService = inject(NavigationService);
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
 
   protected changeLanguage(language: 'fr' | 'en'): void {
     this.languageService.use(language);
@@ -42,8 +43,7 @@ export class HeaderComponent {
   }
 
   protected logout(): void {
-    this.authService.logout();
+    this.store.dispatch(authActions.logoutRequested());
     void this.router.navigate(['/']);
   }
 }
-

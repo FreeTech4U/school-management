@@ -1,3 +1,10 @@
+/**
+ * Auth models used by the application layer.
+ * MockAuthRole and MockAuthUser bridge the backend UserData with the existing
+ * navigation/guards system. MockAuthSession and MockTokenPayload were used
+ * exclusively by the old mock authentication and have been removed.
+ */
+
 export type MockAuthRole = 'director' | 'accountant' | 'administrator';
 
 export interface MockAuthUser {
@@ -6,18 +13,3 @@ export interface MockAuthUser {
   identifier: string;
   role: MockAuthRole;
 }
-
-export interface MockAuthSession {
-  token: string;
-  user: MockAuthUser;
-  expiresIn: number;
-}
-
-export interface MockTokenPayload {
-  sub: string;
-  fullName: string;
-  identifier: string;
-  role: MockAuthRole;
-  exp: number;
-}
-

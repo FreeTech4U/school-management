@@ -2,13 +2,13 @@
   display: block;
 }
 
-.login-main {
+.register-main {
   background: linear-gradient(180deg, #fff 0%, var(--color-surface) 100%);
   min-height: 70vh;
   padding: 3rem 1rem;
 }
 
-.login-wrap {
+.register-wrap {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
   gap: 1.2rem;
@@ -17,15 +17,15 @@
   margin: 0 auto;
 }
 
-.login-copy,
-.login-card {
+.register-copy,
+.register-card {
   border: 1px solid var(--color-border);
   border-radius: 1rem;
   background: #fff;
   padding: 1.4rem;
 }
 
-.login-copy {
+.register-copy {
   box-shadow: 0 22px 32px -28px var(--color-primary);
 }
 
@@ -35,11 +35,13 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 0.8rem;
+  font-size: 0.85rem;
 }
 
 .subtitle {
   color: var(--color-muted);
   margin-bottom: 1rem;
+  font-size: 0.95rem;
 }
 
 .benefits {
@@ -48,13 +50,16 @@
   display: grid;
   gap: 0.5rem;
   color: var(--color-text);
+  font-size: 0.9rem;
 }
 
-.login-card {
+.register-card {
   border-top: 4px solid var(--color-primary);
+  overflow-y: auto;
+  max-height: calc(100vh - 8rem);
 }
 
-.login-card h2 {
+.register-card h2 {
   margin-bottom: 0.3rem;
   font-size: 1.5rem;
   color: var(--color-text);
@@ -63,15 +68,10 @@
 .helper {
   color: var(--color-muted);
   margin-bottom: 1rem;
-  font-size: 0.95rem;
-}
-
-.mock-hint {
-  margin: 0 0 1rem;
-  color: var(--color-muted);
   font-size: 0.9rem;
 }
 
+.success-message,
 .error-message {
   margin-bottom: 1rem !important;
 }
@@ -82,15 +82,31 @@ form {
   margin: 1.5rem 0;
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 .form-group {
   display: grid;
   gap: 0.35rem;
 }
 
+.form-section-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  margin-top: 0.5rem;
+  margin-bottom: -0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 label {
   margin-top: 0;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   color: var(--color-text);
 }
 
@@ -101,8 +117,8 @@ label {
 :deep(.p-inputtext) {
   border: 1px solid var(--color-border);
   border-radius: 0.7rem;
-  padding: 0.72rem 0.8rem;
-  font-size: 0.95rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
   color: var(--color-text);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -122,7 +138,7 @@ label {
 .field-error {
   margin: 0.2rem 0 0;
   color: #b91c1c;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   display: block;
 }
 
@@ -131,6 +147,7 @@ label {
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.05em;
+  grid-column: 1 / -1;
 }
 
 :deep(.submit-btn .p-button) {
@@ -148,21 +165,7 @@ label {
   cursor: not-allowed;
 }
 
-
-.back-home {
-  display: inline-block;
-  margin-top: 1rem;
-  color: var(--color-secondary);
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s ease;
-}
-
-.back-home:hover {
-  color: var(--color-primary);
-}
-
-.back-to-register {
+.back-to-login {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
@@ -171,7 +174,7 @@ label {
   color: var(--color-muted);
 }
 
-.register-link {
+.login-link {
   display: inline-block;
   margin-top: 0.5rem;
   color: var(--color-secondary);
@@ -180,37 +183,45 @@ label {
   transition: color 0.2s ease;
 }
 
-.register-link:hover {
+.login-link:hover {
   color: var(--color-primary);
 }
 
 @media (max-width: 900px) {
-  .login-wrap {
+  .register-wrap {
     grid-template-columns: 1fr;
   }
 
-  .login-main {
+  .register-main {
     padding: 2rem 1rem;
   }
 }
 
 @media (max-width: 640px) {
-  .login-main {
+  .register-main {
     padding: 1.5rem 1rem;
     min-height: 100vh;
   }
 
-  .login-copy,
-  .login-card {
+  .register-copy,
+  .register-card {
     padding: 1rem;
   }
 
-  .login-card h2 {
+  .register-card {
+    max-height: none;
+  }
+
+  .register-card h2 {
     font-size: 1.25rem;
   }
 
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
   label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
 
   form {
@@ -219,23 +230,16 @@ label {
   }
 
   .eyebrow {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
   }
 
   .benefits {
-    font-size: 0.9rem;
-  }
-
-  .demo-accounts {
-    margin-top: 1rem;
-    padding: 0.75rem;
-  }
-
-  .demo-accounts h3 {
     font-size: 0.85rem;
   }
 
-  .demo-accounts ul {
-    font-size: 0.8rem;
+  :deep(.p-inputtext) {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.85rem;
   }
 }
+

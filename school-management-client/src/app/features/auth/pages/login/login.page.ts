@@ -1,74 +1,85 @@
-import { Component, signal } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { catchError, finalize, of } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
+import { Store } from '@ngrx/store';
+import { filter } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 
-import { AuthService } from '../../../../core/auth/auth.service';
+import { authActions, selectAuthError, selectIsAuthenticatedAuth, selectIsLoadingAuth } from '../../../../store/auth';
 import { FooterComponent } from '../../../../core/layout/footer/footer.component';
 import { HeaderComponent } from '../../../../core/layout/header/header.component';
 import { LoginCredentials } from '../../models/login-credentials.model';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, HeaderComponent, FooterComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    TranslatePipe,
+    AsyncPipe,
+    HeaderComponent,
+    FooterComponent,
+    ButtonModule,
+    InputTextModule,
+    MessageModule
+  ],
   templateUrl: './login.page.html',
   styleUrl: './login.page.css'
 })
 export class LoginPage {
-  protected readonly submitted = signal(false);
-  protected readonly isSubmitting = signal(false);
-  protected readonly authError = signal<string | null>(null);
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
+
+  protected submitted = false;
   protected readonly loginForm;
 
-  constructor(
-    private readonly fb: FormBuilder,
-    private readonly authService: AuthService,
-    private readonly router: Router
-  ) {
+  protected readonly isLoading$ = this.store.select(selectIsLoadingAuth);
+  protected readonly authError$ = this.store.select(selectAuthError);
+
+  constructor() {
     this.loginForm = this.fb.nonNullable.group({
       identifier: ['', [Validators.required, LoginPage.emailOrPhoneValidator]],
       password: ['', [Validators.required, Validators.minLength(8)]]
     });
+
+    this.store.select(selectIsAuthenticatedAuth)
+      .pipe(
+        filter(Boolean),
+        takeUntilDestroyed()
+      )
+      .subscribe(() => void this.router.navigate(['/dashboard']));
+
+    this.isLoading$
+      .pipe(takeUntilDestroyed())
+      .subscribe((loading) => {
+        loading ? this.loginForm.disable() : this.loginForm.enable();
+      });
   }
 
   protected onSubmit(): void {
-    this.submitted.set(true);
+    this.submitted = true;
 
-    if (this.loginForm.invalid || this.isSubmitting()) {
+    if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
 
-    this.isSubmitting.set(true);
-    this.authError.set(null);
-
     const credentials: LoginCredentials = this.loginForm.getRawValue();
-
-    this.authService
-      .login(credentials)
-      .pipe(
-        finalize(() => this.isSubmitting.set(false)),
-        catchError(() => {
-          this.authError.set('login.form.errors.invalidCredentials');
-          return of(null);
-        })
-      )
-      .subscribe((session) => {
-        if (!session) {
-          return;
-        }
-
-        void this.router.navigate(['/dashboard']);
-      });
+    this.store.dispatch(authActions.loginRequested({ credentials }));
   }
 
   protected isInvalid(controlName: 'identifier' | 'password'): boolean {
     const control = this.loginForm.controls[controlName];
-    return control.invalid && (control.touched || this.submitted());
+    return control.invalid && (control.touched || this.submitted);
   }
 
-  private static emailOrPhoneValidator(control: AbstractControl): ValidationErrors | null {
+  protected static emailOrPhoneValidator(control: AbstractControl): ValidationErrors | null {
     const rawValue = String(control.value ?? '').trim();
 
     if (!rawValue) {
@@ -82,5 +93,3 @@ export class LoginPage {
     return isEmail || isPhone ? null : { invalidIdentifier: true };
   }
 }
-
-
