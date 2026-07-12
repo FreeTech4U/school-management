@@ -12,29 +12,28 @@
 
 ### 🔴 CRITICAL - Bloque MVP
 
-#### **FeeStructure.feeType** ❌ ABSENT
+#### **FeeStructure.feeType** ✅ IMPLÉMENTÉ
 - Specs F-10 exige : `TUITION|REGISTRATION|CANTEEN|TRANSPORT|EXAM`
-- **Impact :** Impossible de différencier les frais
-- **Fix :** Ajouter champ + Enum FeeType
+- **Status :** ✅ Champ ajouté avec enum FeeType
+- **Implémentation :** V2__create_enums.sql + FeeStructure.java modifiée
 
 ```java
-@Column(name = "fee_type")
+@Column(name = "fee_type", nullable = false)
 @Enumerated(EnumType.STRING)
-private FeeType feeType; // TUITION, REGISTRATION, CANTEEN, TRANSPORT, EXAM
+private FeeType feeType; // ✅ ENUM
 ```
 
 ---
 
-#### **Payment.status** ❌ ABSENT
+#### **Payment.status** ✅ IMPLÉMENTÉ
 - Specs exige : `PENDING|CONFIRMED|FAILED|CANCELLED`
-- **Implémentation :** Payment n'a pas de status du tout
-- **Impact :** Impossible de tracker paiements échoués
-- **Fix :** Ajouter champ + Enum PaymentStatus
+- **Status :** ✅ Champ ajouté avec enum PaymentStatus
+- **Implémentation :** V3__add_enum_columns.sql + Payment.java modifiée
 
 ```java
-@Column(nullable = false)
+@Column(name = "payment_status", nullable = false)
 @Enumerated(EnumType.STRING)
-private PaymentStatus status = PaymentStatus.CONFIRMED; // Default
+private PaymentStatus status = PaymentStatus.PENDING;
 ```
 
 ---
@@ -56,37 +55,31 @@ private Integer weeklyHours;
 
 ---
 
-#### **FeeStructure** INCOMPLET
-Manquent :
-- `installmentsAllowed` (Boolean)
-- `maxInstallments` (défaut 3)
-
-```java
-@Column(name = "installments_allowed", nullable = false)
-private Boolean installmentsAllowed = true;
-
-@Column(name = "max_installments", nullable = false)
-private Integer maxInstallments = 3;
-```
+#### **FeeStructure** - Partiellement complété
+Implémentés :
+- ✅ `installmentsAllowed` (Boolean) - déjà existant ligne 38
+- ✅ `maxInstallments` (Integer) - déjà existant ligne 41
 
 ---
 
 ### 🟡 MEDIUM - Phase 2
 
-#### **StudentEnrollment.transferNotes** ❌
+#### **StudentEnrollment.transferNotes** ✅ IMPLÉMENTÉ
 ```java
 @Column(name = "transfer_notes")
-private String transferNotes;
+private String transferNotes; // ✅ Ajouté
 ```
+- **Status :** ✅ Champ ajouté avec migration V3
+- **Utilisation :** Peuplé dans EnrollmentService.transferStudent()
 
-#### **SmsTemplate** - Pré-chargés manquants ❌
+#### **SmsTemplate** - Pré-chargés ✅ IMPLÉMENTÉS
 Specs exige 4 templates à l'onboarding :
-- `fee_reminder`
-- `payment_received`
-- `report_card_published`
-- `absence_notification`
+- ✅ `fee_reminder` (ligne 725 V1__init_tenant_schema.sql)
+- ✅ `payment_received` (ligne 727 V1__init_tenant_schema.sql)
+- ✅ `report_card_published` (ligne 729 V1__init_tenant_schema.sql)
+- ✅ `absence_notification` (ligne 731 V1__init_tenant_schema.sql)
 
-**Fix :** Créer données de seed dans V2__insert_templates.sql
+**Status :** ✅ Tous pré-chargés dans DB à l'initialisation
 
 ---
 
