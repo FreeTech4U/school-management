@@ -3,6 +3,7 @@ package com.schoolsaas.attendance.entity;
 import com.schoolsaas.common.entity.BaseEntity;
 import com.schoolsaas.common.enums.AttendanceStatus;
 import com.schoolsaas.common.enums.Period;
+import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,8 +19,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Attendance extends BaseEntity {
 
-    @Column(name = "enrollment_id", nullable = false)
-    private UUID enrollmentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private StudentEnrollment enrollment;
 
     @Column(nullable = false)
     private LocalDate date;

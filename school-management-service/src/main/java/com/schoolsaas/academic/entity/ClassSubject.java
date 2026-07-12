@@ -1,6 +1,7 @@
 package com.schoolsaas.academic.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.identity.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,8 +23,9 @@ public class ClassSubject extends BaseEntity {
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
-    @Column(name = "teacher_id")
-    private UUID teacherId; // UUID of User
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id", nullable = false)
+    private User teacher;
 
     @Column(nullable = false)
     private Integer coefficient = 1;

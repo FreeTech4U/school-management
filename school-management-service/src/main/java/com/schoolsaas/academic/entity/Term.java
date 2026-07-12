@@ -1,10 +1,13 @@
 package com.schoolsaas.academic.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.grading.entity.Grade;
+import com.schoolsaas.grading.entity.ReportCard;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "terms")
@@ -36,4 +39,10 @@ public class Term extends BaseEntity {
 
     @Column(name = "grades_entry_open")
     private Boolean gradesEntryOpen = false;
+
+    @OneToMany(mappedBy = "term", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Grade> grades;
+
+    @OneToMany(mappedBy = "term", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReportCard> reportCards;
 }

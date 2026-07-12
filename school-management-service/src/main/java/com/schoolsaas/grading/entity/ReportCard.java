@@ -1,13 +1,14 @@
 package com.schoolsaas.grading.entity;
 
+import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.common.entity.BaseEntity;
 import com.schoolsaas.common.enums.ReportCardStatus;
+import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "report_cards")
@@ -18,11 +19,13 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ReportCard extends BaseEntity {
 
-    @Column(name = "enrollment_id", nullable = false)
-    private UUID enrollmentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private StudentEnrollment enrollment;
 
-    @Column(name = "term_id", nullable = false)
-    private UUID termId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "term_id", nullable = false)
+    private Term term;
 
     @Column(name = "general_average")
     private BigDecimal generalAverage;

@@ -1,7 +1,10 @@
 package com.schoolsaas.grading.entity;
 
+import com.schoolsaas.academic.entity.ClassSubject;
+import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.common.entity.BaseEntity;
 import com.schoolsaas.common.enums.EvaluationType;
+import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,14 +21,17 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Grade extends BaseEntity {
 
-    @Column(name = "enrollment_id", nullable = false)
-    private UUID enrollmentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private StudentEnrollment enrollment;
 
-    @Column(name = "class_subject_id", nullable = false)
-    private UUID classSubjectId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_subject_id", nullable = false)
+    private ClassSubject classSubject;
 
-    @Column(name = "term_id", nullable = false)
-    private UUID termId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "term_id", nullable = false)
+    private Term term;
 
     @Column(nullable = false)
     private BigDecimal value;

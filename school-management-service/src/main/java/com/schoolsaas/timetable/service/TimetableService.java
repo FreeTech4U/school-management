@@ -34,7 +34,7 @@ public class TimetableService {
         }
 
         // 2. Check Teacher conflict
-        if (cs.getTeacherId() != null && timetableEntryRepository.existsConflictForTeacher(cs.getTeacherId(), entry.getTimeSlotId(), entry.getAcademicYearId())) {
+        if (cs.getTeacher() != null && timetableEntryRepository.existsConflictForTeacher(cs.getTeacher().getId(), entry.getTimeSlotId(), entry.getAcademicYearId())) {
             throw BusinessException.conflict("TEACHER_TIMESLOT_CONFLICT", "L'enseignant est déjà occupé sur ce créneau");
         }
         

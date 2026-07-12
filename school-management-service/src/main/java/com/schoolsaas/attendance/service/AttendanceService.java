@@ -29,7 +29,7 @@ public class AttendanceService {
     @Transactional
     public Attendance recordAttendance(Attendance attendance) {
         if (attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(
-                attendance.getEnrollmentId(), attendance.getDate(), attendance.getPeriod())) {
+                attendance.getEnrollment().getId(), attendance.getDate(), attendance.getPeriod())) {
             throw BusinessException.conflict("ATTENDANCE_ALREADY_RECORDED", "La présence est déjà enregistrée pour cet élève ce jour");
         }
 
@@ -43,7 +43,7 @@ public class AttendanceService {
     }
 
     private void sendAbsenceNotification(Attendance attendance) {
-        StudentEnrollment enrollment = enrollmentRepository.findById(attendance.getEnrollmentId()).orElse(null);
+        StudentEnrollment enrollment = attendance.getEnrollment();
         if (enrollment == null) return;
 
         Student student = studentRepository.findById(enrollment.getStudentId()).orElse(null);
