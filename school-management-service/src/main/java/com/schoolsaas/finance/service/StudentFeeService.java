@@ -36,7 +36,7 @@ public class StudentFeeService {
         List<StudentFee> studentFees = structures.stream()
                 .filter(fs -> fs.getClassId() == null || fs.getClassId().equals(enrollment.getClassId()))
                 .map(fs -> StudentFee.builder()
-                        .enrollmentId(enrollment.getId())
+                        .enrollment(enrollment)
                         .feeStructure(fs)
                         .amountDue(fs.getAmount())
                         .amountPaid(BigDecimal.ZERO)

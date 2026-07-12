@@ -68,7 +68,7 @@ public class PaymentService {
 
             PaymentAllocation allocation = PaymentAllocation.builder()
                     .payment(payment)
-                    .studentFeeId(fee.getId())
+                    .studentFee(fee)
                     .amount(allocReq.getAmount())
                     .build();
             
@@ -107,7 +107,7 @@ public class PaymentService {
         
         // Reverse allocations (In Phase 2, we would recalculate fees status)
         for (PaymentAllocation alloc : payment.getAllocations()) {
-            StudentFee fee = studentFeeRepository.findById(alloc.getStudentFeeId()).orElse(null);
+            StudentFee fee = alloc.getStudentFee();
             if (fee != null) {
                 fee.setAmountPaid(fee.getAmountPaid().subtract(alloc.getAmount()));
                 studentFeeRepository.save(fee);
@@ -128,7 +128,7 @@ public class PaymentService {
                 .receiptNumber(p.getReceiptNumber())
                 .allocations(p.getAllocations().stream()
                         .map(a -> PaymentResponse.AllocationResponse.builder()
-                                .studentFeeId(a.getStudentFeeId())
+                                .studentFeeId(a.getStudentFee().getId())
                                 .amountAllocated(a.getAmount())
                                 .build())
                         .collect(Collectors.toList()))

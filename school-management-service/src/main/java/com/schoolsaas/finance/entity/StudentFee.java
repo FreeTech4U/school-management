@@ -2,12 +2,14 @@ package com.schoolsaas.finance.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
 import com.schoolsaas.common.enums.FeeStatus;
+import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -19,8 +21,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class StudentFee extends BaseEntity {
 
-    @Column(name = "enrollment_id", nullable = false)
-    private UUID enrollmentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private StudentEnrollment enrollment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fee_structure_id", nullable = false)
@@ -47,4 +50,7 @@ public class StudentFee extends BaseEntity {
 
     @Column(name = "last_reminder_sent_at")
     private Instant lastReminderSentAt;
+
+    @OneToMany(mappedBy = "studentFee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<PaymentAllocation> allocations;
 }

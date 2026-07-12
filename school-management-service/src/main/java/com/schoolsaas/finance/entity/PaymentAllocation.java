@@ -20,9 +20,24 @@ public class PaymentAllocation extends BaseEntity {
     @JoinColumn(name = "payment_id", nullable = false)
     private Payment payment;
 
-    @Column(name = "student_fee_id", nullable = false)
-    private UUID studentFeeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_fee_id", nullable = false)
+    private StudentFee studentFee;
 
     @Column(nullable = false)
     private BigDecimal amount;
+
+    @PrePersist
+    @PreUpdate
+    private void validateAllocation() {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Allocation amount must be positive");
+        }
+        if (studentFee == null) {
+            throw new IllegalArgumentException("Student fee is required");
+        }
+        if (payment == null) {
+            throw new IllegalArgumentException("Payment is required");
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package com.schoolsaas.enrollment.repository;
 
+import com.schoolsaas.common.enums.EnrollmentStatus;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,4 +12,5 @@ public interface StudentEnrollmentRepository extends JpaRepository<StudentEnroll
     Optional<StudentEnrollment> findByStudentIdAndAcademicYearId(UUID studentId, UUID academicYearId);
     List<StudentEnrollment> findByClassId(UUID classId);
     List<StudentEnrollment> findByStudentId(UUID studentId);
+    List<StudentEnrollment> findByClassIdAndStatusAndAcademicYearId(UUID classId, EnrollmentStatus status, UUID academicYearId);
 }
