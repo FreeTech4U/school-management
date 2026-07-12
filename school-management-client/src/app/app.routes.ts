@@ -17,6 +17,12 @@ export const routes: Routes = [
 	  import('./features/auth/pages/login/login.page').then((module) => module.LoginPage)
   },
   {
+	path: 'register',
+	canActivate: [guestGuard],
+	loadComponent: () =>
+	  import('./features/auth/pages/register/register.page').then((module) => module.RegisterPage)
+  },
+  {
 	path: 'dashboard',
 	canActivate: [authGuard],
 	loadComponent: () =>

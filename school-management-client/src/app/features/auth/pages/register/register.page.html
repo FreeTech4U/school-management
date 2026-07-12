@@ -1,0 +1,252 @@
+<app-header />
+
+<main class="register-main">
+  <section class="container register-wrap">
+    <div class="register-copy">
+      <p class="eyebrow">{{ 'register.eyebrow' | translate }}</p>
+      <h1>{{ 'register.title' | translate }}</h1>
+      <p class="subtitle">{{ 'register.subtitle' | translate }}</p>
+
+      <ul class="benefits">
+        <li>{{ 'register.benefits.0' | translate }}</li>
+        <li>{{ 'register.benefits.1' | translate }}</li>
+        <li>{{ 'register.benefits.2' | translate }}</li>
+      </ul>
+    </div>
+
+    <div class="register-card">
+      <h2>{{ 'register.form.title' | translate }}</h2>
+      <p class="helper">{{ 'register.form.helper' | translate }}</p>
+
+      @if (registerSuccess()) {
+        <p-message
+          severity="success"
+          [text]="'register.form.successMessage' | translate"
+          styleClass="success-message"
+        />
+      }
+
+      @if (registerError()) {
+        <p-message
+          severity="error"
+          [text]="registerError() | translate"
+          styleClass="error-message"
+        />
+      }
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="schoolName">{{ 'register.form.schoolName' | translate }}</label>
+            <input
+              id="schoolName"
+              pInputText
+              type="text"
+              formControlName="schoolName"
+              [placeholder]="'register.form.schoolNamePlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('schoolName')) {
+              <small class="field-error">{{ 'register.form.errors.schoolName' | translate }}</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="slug">{{ 'register.form.slug' | translate }}</label>
+            <input
+              id="slug"
+              pInputText
+              type="text"
+              formControlName="slug"
+              [placeholder]="'register.form.slugPlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('slug')) {
+              <small class="field-error">{{ 'register.form.errors.slug' | translate }}</small>
+            }
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">{{ 'register.form.email' | translate }}</label>
+            <input
+              id="email"
+              pInputText
+              type="email"
+              formControlName="email"
+              [placeholder]="'register.form.emailPlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('email')) {
+              <small class="field-error">{{ 'register.form.errors.email' | translate }}</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="phone">{{ 'register.form.phone' | translate }}</label>
+            <input
+              id="phone"
+              pInputText
+              type="tel"
+              formControlName="phone"
+              [placeholder]="'register.form.phonePlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('phone')) {
+              <small class="field-error">{{ 'register.form.errors.phone' | translate }}</small>
+            }
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city">{{ 'register.form.city' | translate }}</label>
+            <input
+              id="city"
+              pInputText
+              type="text"
+              formControlName="city"
+              [placeholder]="'register.form.cityPlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('city')) {
+              <small class="field-error">{{ 'register.form.errors.city' | translate }}</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="countryCode">{{ 'register.form.countryCode' | translate }}</label>
+            <input
+              id="countryCode"
+              pInputText
+              type="text"
+              formControlName="countryCode"
+              [placeholder]="'register.form.countryCodePlaceholder' | translate"
+              maxlength="2"
+              class="w-100"
+            />
+            @if (isInvalid('countryCode')) {
+              <small class="field-error">{{ 'register.form.errors.countryCode' | translate }}</small>
+            }
+          </div>
+        </div>
+
+        <div class="form-section-title">{{ 'register.form.directorSection' | translate }}</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="directorFirstName">{{ 'register.form.directorFirstName' | translate }}</label>
+            <input
+              id="directorFirstName"
+              pInputText
+              type="text"
+              formControlName="directorFirstName"
+              [placeholder]="'register.form.directorFirstNamePlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('directorFirstName')) {
+              <small class="field-error">{{ 'register.form.errors.required' | translate }}</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="directorLastName">{{ 'register.form.directorLastName' | translate }}</label>
+            <input
+              id="directorLastName"
+              pInputText
+              type="text"
+              formControlName="directorLastName"
+              [placeholder]="'register.form.directorLastNamePlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('directorLastName')) {
+              <small class="field-error">{{ 'register.form.errors.required' | translate }}</small>
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="directorPassword">{{ 'register.form.directorPassword' | translate }}</label>
+          <input
+            id="directorPassword"
+            pInputText
+            type="password"
+            formControlName="directorPassword"
+            [placeholder]="'register.form.directorPasswordPlaceholder' | translate"
+            class="w-100"
+          />
+          @if (isInvalid('directorPassword')) {
+            <small class="field-error">{{ 'register.form.errors.password' | translate }}</small>
+          }
+        </div>
+
+        <div class="form-section-title">{{ 'register.form.subscriptionSection' | translate }}</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="planCode">{{ 'register.form.planCode' | translate }}</label>
+            <input
+              id="planCode"
+              pInputText
+              type="text"
+              formControlName="planCode"
+              [placeholder]="'register.form.planCodePlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('planCode')) {
+              <small class="field-error">{{ 'register.form.errors.required' | translate }}</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="currency">{{ 'register.form.currency' | translate }}</label>
+            <input
+              id="currency"
+              pInputText
+              type="text"
+              formControlName="currency"
+              [placeholder]="'register.form.currencyPlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('currency')) {
+              <small class="field-error">{{ 'register.form.errors.required' | translate }}</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="timezone">{{ 'register.form.timezone' | translate }}</label>
+            <input
+              id="timezone"
+              pInputText
+              type="text"
+              formControlName="timezone"
+              [placeholder]="'register.form.timezonePlaceholder' | translate"
+              class="w-100"
+            />
+            @if (isInvalid('timezone')) {
+              <small class="field-error">{{ 'register.form.errors.required' | translate }}</small>
+            }
+          </div>
+        </div>
+
+        <p-button
+          type="submit"
+          [label]="isLoading() ? ('register.form.submitLoading' | translate) : ('register.form.submit' | translate)"
+          [loading]="isLoading()"
+          [disabled]="registerForm.invalid || isLoading()"
+          styleClass="w-100 submit-btn"
+          icon="pi pi-check"
+          iconPos="right"
+        />
+      </form>
+
+      <div class="back-to-login">
+        <p>{{ 'register.form.alreadyHaveAccount' | translate }}</p>
+        <a routerLink="/login" class="login-link">{{ 'register.form.backToLogin' | translate }}</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<app-footer />

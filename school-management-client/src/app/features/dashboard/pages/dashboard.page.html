@@ -18,8 +18,8 @@
     <section class="dashboard-grid">
       <article class="card overview-card">
         <p class="card-label">{{ 'dashboard.overview.label' | translate }}</p>
-        <h2>{{ user?.fullName }}</h2>
-        <p class="meta">{{ user?.identifier }}</p>
+        <h2>{{ user()?.fullName }}</h2>
+        <p class="meta">{{ user()?.email }}</p>
         <p class="role">{{ 'dashboard.overview.role' | translate }}: {{ roleLabelKey | translate }}</p>
       </article>
 

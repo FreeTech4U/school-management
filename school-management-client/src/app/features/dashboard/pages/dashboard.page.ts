@@ -1,10 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { Store } from '@ngrx/store';
 
+import { authActions, selectAuthUser } from '../../../store/auth';
 import { AuthService } from '../../../core/auth/auth.service';
 import { FooterComponent } from '../../../core/layout/footer/footer.component';
 import { HeaderComponent } from '../../../core/layout/header/header.component';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -13,23 +16,19 @@ import { HeaderComponent } from '../../../core/layout/header/header.component';
   styleUrl: './dashboard.page.css'
 })
 export class DashboardPage {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly router: Router
-  ) {}
+  private readonly store = inject(Store);
+  private readonly router = inject(Router);
+  // authService still needed for currentUser signal consumed by Header
+  private readonly authService = inject(AuthService);
 
-  protected get user() {
-    return this.authService.currentUser();
-  }
+  protected readonly user = toSignal(this.store.select(selectAuthUser));
 
   protected get roleLabelKey(): string {
-    return `roles.${this.user?.role ?? 'administrator'}`;
+    return `roles.${this.authService.getCurrentRole() ?? 'administrator'}`;
   }
 
   protected logout(): void {
-    this.authService.logout();
+    this.store.dispatch(authActions.logoutRequested());
     void this.router.navigate(['/']);
   }
 }
-
-
