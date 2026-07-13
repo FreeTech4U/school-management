@@ -82,7 +82,7 @@ class EnrollmentServiceTest {
 
         // Then
         assertNotNull(response);
-        assertEquals("ACTIVE", response.getStatus());
+        assertEquals("ENROLLED", response.getStatus());
         verify(studentFeeService).generateFeesForEnrollment(any(StudentEnrollment.class));
         verify(enrollmentRepository).save(any(StudentEnrollment.class));
     }
@@ -109,7 +109,7 @@ class EnrollmentServiceTest {
         UUID enrollmentId = UUID.randomUUID();
         StudentEnrollment enrollment = new StudentEnrollment();
         enrollment.setId(enrollmentId);
-        enrollment.setStatus(EnrollmentStatus.ACTIVE);
+        enrollment.setStatus(EnrollmentStatus.ENROLLED);
 
         when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
 
@@ -117,7 +117,7 @@ class EnrollmentServiceTest {
         enrollmentService.withdrawStudent(enrollmentId);
 
         // Then
-        assertEquals(EnrollmentStatus.DROPPED_OUT, enrollment.getStatus());
+        assertEquals(EnrollmentStatus.WITHDRAWN, enrollment.getStatus());
         verify(enrollmentRepository).save(enrollment);
     }
 }

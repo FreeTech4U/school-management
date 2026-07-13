@@ -55,12 +55,12 @@ public class ClassService {
 
     // Class Subjects
     public List<ClassSubject> getClassSubjects(UUID classId) {
-        return classSubjectRepository.findByClassId(classId);
+        return classSubjectRepository.findBySchoolClassId(classId);
     }
 
     @Transactional
     public ClassSubject assignSubjectToClass(UUID classId, ClassSubject classSubject) {
-        classSubject.setClassId(classId);
+       // classSubject.setClassId(classId);
         return classSubjectRepository.save(classSubject);
     }
 

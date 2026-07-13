@@ -1,6 +1,7 @@
 package com.schoolsaas.timetable.controller;
 
 import com.schoolsaas.common.dto.ApiResponse;
+import com.schoolsaas.common.enums.DayOfWeek;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.timetable.dto.request.TimeSlotRequest;
 import com.schoolsaas.timetable.dto.request.TimetableEntryRequest;
@@ -21,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -175,7 +177,7 @@ public class TimetableController {
 
         TimetableEntry entry = TimetableEntry.builder()
                 .classSubjectId(request.getClassSubjectId())
-                .timeSlotId(request.getTimeSlotId())
+            //    .timeSlot(request.getTimeSlotId())
                 .academicYearId(request.getAcademicYearId())
                 .termId(request.getTermId())
                 .roomNumber(request.getRoomNumber())
@@ -240,7 +242,7 @@ public class TimetableController {
         return TimetableEntryResponse.builder()
                 .id(entry.getId())
                 .classSubjectId(entry.getClassSubjectId())
-                .timeSlotId(entry.getTimeSlotId())
+                .timeSlotId(entry.getTimeSlot().getId())
                 .academicYearId(entry.getAcademicYearId())
                 .termId(entry.getTermId())
                 .roomNumber(entry.getRoomNumber())
@@ -255,11 +257,11 @@ public class TimetableController {
     @AllArgsConstructor
     static class TimeSlotResponse {
         private UUID id;
-        private String dayOfWeek;
+        private DayOfWeek dayOfWeek;
         private LocalTime startTime;
         private LocalTime endTime;
         private String label;
-        private Integer orderIndex;
+        private Short orderIndex;
     }
 
     @Data
@@ -274,6 +276,6 @@ public class TimetableController {
         private UUID termId;
         private String roomNumber;
         private Boolean isActive;
-        private LocalDateTime createdAt;
+        private Instant createdAt;
     }
 }

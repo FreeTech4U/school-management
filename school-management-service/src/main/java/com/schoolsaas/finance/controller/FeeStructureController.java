@@ -221,7 +221,7 @@ public class FeeStructureController {
     private StudentFeeResponse mapStudentFeeToResponse(StudentFee fee) {
         return StudentFeeResponse.builder()
                 .id(fee.getId())
-                .enrollmentId(fee.getEnrollment().getId())
+                .enrollmentId(fee.getEnrollmentId())
                 .feeStructureId(fee.getFeeStructure().getId())
                 .feeLabel(fee.getFeeStructure().getLabel())
                 .amountDue(fee.getAmountDue())

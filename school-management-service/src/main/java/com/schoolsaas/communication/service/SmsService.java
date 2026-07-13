@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -51,7 +52,7 @@ public class SmsService {
             smsLog.setProviderMessageId(result.getProviderMessageId());
             if (result.isSuccess()) {
                 smsLog.setStatus(SmsStatus.SENT);
-                smsLog.setSentAt(LocalDateTime.now());
+                smsLog.setSentAt(Instant.now());
             } else {
                 smsLog.setStatus(SmsStatus.FAILED);
                 smsLog.setErrorCode(result.getErrorCode());

@@ -13,7 +13,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -108,7 +107,7 @@ class PaymentControllerTest extends AbstractControllerTest {
                 .studentId(studentId)
                 .studentName("Awa Diallo")
                 .amount(new BigDecimal("30000"))
-                .paymentDate(LocalDateTime.of(2026, 2, 15, 10, 0))
+                .paymentDate(LocalDate.of(2026, 2, 15))
                 .paymentMethod("CASH")
                 .referenceNumber("PAY-001")
                 .receiptNumber("RCPT-001")

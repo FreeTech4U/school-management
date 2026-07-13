@@ -29,12 +29,12 @@ public class TimetableService {
                 .orElseThrow(() -> BusinessException.notFound("CLASS_SUBJECT_NOT_FOUND", "Matière de classe introuvable"));
 
         // 1. Check Class conflict
-        if (timetableEntryRepository.existsConflictForClass(cs.getClassId(), entry.getTimeSlotId(), entry.getAcademicYearId())) {
+        if (timetableEntryRepository.existsConflictForClass(cs.getSchoolClass().getId(), entry.getTimeSlot().getId(), entry.getAcademicYearId())) {
             throw BusinessException.conflict("CLASS_TIMESLOT_CONFLICT", "La classe est déjà occupée sur ce créneau");
         }
 
         // 2. Check Teacher conflict
-        if (cs.getTeacher() != null && timetableEntryRepository.existsConflictForTeacher(cs.getTeacher().getId(), entry.getTimeSlotId(), entry.getAcademicYearId())) {
+        if (timetableEntryRepository.existsConflictForTeacher(cs.getTeacherId(), entry.getTimeSlot().getId(), entry.getAcademicYearId())) {
             throw BusinessException.conflict("TEACHER_TIMESLOT_CONFLICT", "L'enseignant est déjà occupé sur ce créneau");
         }
         

@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -15,7 +16,7 @@ public class PaymentResponse {
     private UUID studentId;
     private String studentName;
     private BigDecimal amount;
-    private LocalDateTime paymentDate;
+    private LocalDate paymentDate;
     private String paymentMethod;
     private String referenceNumber;
     private String receiptNumber;

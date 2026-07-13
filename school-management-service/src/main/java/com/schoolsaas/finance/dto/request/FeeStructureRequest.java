@@ -38,5 +38,5 @@ public class FeeStructureRequest {
 
     @Min(value = 1, message = "Max installments must be at least 1")
     @Max(value = 12, message = "Max installments cannot exceed 12")
-    private Integer maxInstallments = 3;
+    private Short maxInstallments = 3;
 }

@@ -1,5 +1,6 @@
 package com.schoolsaas.integration;
 
+import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.platform.entity.School;
 import com.schoolsaas.platform.repository.SchoolRepository;
 import org.junit.jupiter.api.Disabled;
@@ -46,7 +47,7 @@ public class MultiTenancyIntegrationTest {
                 .slug("test-school")
                 .schemaName("school_test")
                 .email("test@school.com")
-                .status("active")
+                .status(SchoolStatus.ACTIVE)
                 .build();
         
         School saved = schoolRepository.save(school);

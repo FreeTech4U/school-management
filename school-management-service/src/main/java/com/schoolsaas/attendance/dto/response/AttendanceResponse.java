@@ -3,6 +3,7 @@ package com.schoolsaas.attendance.dto.response;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,6 +18,6 @@ public class AttendanceResponse {
     private String status;
     private String justification;
     private UUID recordedBy;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

@@ -1,8 +1,10 @@
 package com.schoolsaas.timetable.service;
 
 import com.schoolsaas.academic.entity.ClassSubject;
+import com.schoolsaas.academic.entity.SchoolClass;
 import com.schoolsaas.academic.repository.ClassSubjectRepository;
 import com.schoolsaas.common.exception.BusinessException;
+import com.schoolsaas.timetable.entity.TimeSlot;
 import com.schoolsaas.timetable.entity.TimetableEntry;
 import com.schoolsaas.timetable.repository.TimetableEntryRepository;
 import org.junit.jupiter.api.Test;
@@ -38,11 +40,17 @@ class TimetableServiceTest {
         
         TimetableEntry entry = new TimetableEntry();
         entry.setClassSubjectId(csId);
-        entry.setTimeSlotId(tsId);
+        TimeSlot slot = new TimeSlot();
+        slot.setId(tsId);
+        entry.setTimeSlot(slot);
         entry.setAcademicYearId(yearId);
 
         ClassSubject cs = new ClassSubject();
         cs.setId(csId);
+        SchoolClass schoolClass = new SchoolClass();
+        schoolClass.setId(UUID.randomUUID());
+        cs.setSchoolClass(schoolClass);
+        cs.setTeacherId(UUID.randomUUID());
 
         when(classSubjectRepository.findById(csId)).thenReturn(Optional.of(cs));
         when(timetableEntryRepository.existsConflictForClass(any(), any(), any())).thenReturn(true);

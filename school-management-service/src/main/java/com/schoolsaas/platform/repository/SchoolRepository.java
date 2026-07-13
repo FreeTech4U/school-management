@@ -1,5 +1,6 @@
 package com.schoolsaas.platform.repository;
 
+import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.platform.entity.School;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -23,8 +24,8 @@ public interface SchoolRepository extends JpaRepository<School, UUID> {
     boolean existsByEmail(String email);
 
     /** Récupère une école par son slug et ses statuts autorisés */
-    Optional<School> findBySlugAndStatusIn(String slug, Collection<String> statuses);
+    Optional<School> findBySlugAndStatusIn(String slug, Collection<SchoolStatus> statuses);
 
     /** Récupère toutes les écoles ayant certains statuts */
-    List<School> findAllByStatusIn(Collection<String> statuses);
+    List<School> findAllByStatusIn(Collection<SchoolStatus> statuses);
 }

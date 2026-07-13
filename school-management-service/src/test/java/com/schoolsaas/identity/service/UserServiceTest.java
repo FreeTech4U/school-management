@@ -1,5 +1,6 @@
 package com.schoolsaas.identity.service;
 
+import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.identity.dto.request.CreateUserRequest;
 import com.schoolsaas.identity.dto.response.UserResponse;
@@ -45,7 +46,7 @@ class UserServiceTest {
 
     @Test
     void getAllUsers_ReturnsMappedPage() {
-        User user = user("director@test.com", "DIRECTOR");
+        User user = user("director@test.com", Role.DIRECTOR);
         UserResponse response = response(user);
         PageRequest pageable = PageRequest.of(0, 10);
 
@@ -108,7 +109,7 @@ class UserServiceTest {
     @Test
     void updateUser_WithNewPassword_UpdatesFieldsAndPasswordHash() {
         UUID id = UUID.randomUUID();
-        User existing = user("old@test.com", "DIRECTOR");
+        User existing = user("old@test.com", Role.DIRECTOR);
         existing.setId(id);
         CreateUserRequest request = new CreateUserRequest();
         request.setFirstName("New");
@@ -142,7 +143,7 @@ class UserServiceTest {
     @Test
     void deleteUser_SetsInactiveFlag() {
         UUID id = UUID.randomUUID();
-        User existing = user("director@test.com", "DIRECTOR");
+        User existing = user("director@test.com", Role.DIRECTOR);
         existing.setId(id);
         existing.setIsActive(true);
 
@@ -161,7 +162,7 @@ class UserServiceTest {
         request.setEmail("teacher@test.com");
         request.setPhone("+224622334455");
         request.setPassword("password123");
-        request.setRole("TEACHER");
+        request.setRole(Role.TEACHER);
         request.setEmployeeNumber("EMP-001");
         request.setHireDate(LocalDate.of(2024, 1, 10));
         request.setSpecialty("Mathematics");
@@ -170,7 +171,7 @@ class UserServiceTest {
         return request;
     }
 
-    private User user(String email, String role) {
+    private User user(String email, Role role) {
         return User.builder()
                 .firstName("John")
                 .lastName("Doe")
@@ -189,7 +190,7 @@ class UserServiceTest {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .role(user.getRole())
+                .role(user.getRole().name())
                 .avatarUrl(user.getAvatarUrl())
                 .isActive(user.getIsActive())
                 .build();

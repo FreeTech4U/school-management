@@ -11,18 +11,18 @@ import java.util.UUID;
 public interface TimetableEntryRepository extends JpaRepository<TimetableEntry, UUID> {
     
     @Query("SELECT e FROM TimetableEntry e JOIN ClassSubject cs ON e.classSubjectId = cs.id " +
-           "WHERE cs.classId = :classId AND e.academicYearId = :yearId AND e.isActive = true")
-    List<TimetableEntry> findByClassAndYear(UUID classId, UUID yearId);
+           "WHERE cs.schoolClass.id = :classId AND e.academicYearId = :yearId AND e.isActive = true")
+    List<TimetableEntry> findByClassAndYear(@Param("classId") UUID classId, @Param("yearId") UUID yearId);
 
     @Query("SELECT e FROM TimetableEntry e JOIN ClassSubject cs ON e.classSubjectId = cs.id " +
-           "WHERE cs.teacher.id = :teacherId AND e.academicYearId = :yearId AND e.isActive = true")
+           "WHERE cs.teacherId = :teacherId AND e.academicYearId = :yearId AND e.isActive = true")
     List<TimetableEntry> findByTeacherAndYear(@Param("teacherId") UUID teacherId, @Param("yearId") UUID yearId);
     
     @Query("SELECT COUNT(e) > 0 FROM TimetableEntry e JOIN ClassSubject cs ON e.classSubjectId = cs.id " +
-           "WHERE cs.classId = :classId AND e.timeSlotId = :timeSlotId AND e.academicYearId = :yearId AND e.isActive = true")
+           "WHERE cs.schoolClass.id = :classId AND e.timeSlot.id = :timeSlotId AND e.academicYearId = :yearId AND e.isActive = true")
     boolean existsConflictForClass(@Param("classId") UUID classId, @Param("timeSlotId") UUID timeSlotId, @Param("yearId") UUID yearId);
 
     @Query("SELECT COUNT(e) > 0 FROM TimetableEntry e JOIN ClassSubject cs ON e.classSubjectId = cs.id " +
-           "WHERE cs.teacher.id = :teacherId AND e.timeSlotId = :timeSlotId AND e.academicYearId = :yearId AND e.isActive = true")
+           "WHERE cs.teacherId = :teacherId AND e.timeSlot.id = :timeSlotId AND e.academicYearId = :yearId AND e.isActive = true")
     boolean existsConflictForTeacher(@Param("teacherId") UUID teacherId, @Param("timeSlotId") UUID timeSlotId, @Param("yearId") UUID yearId);
 }

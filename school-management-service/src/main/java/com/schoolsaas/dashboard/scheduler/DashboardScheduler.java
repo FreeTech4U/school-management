@@ -1,5 +1,6 @@
 package com.schoolsaas.dashboard.scheduler;
 
+import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.dashboard.service.DashboardService;
 import com.schoolsaas.platform.entity.School;
 import com.schoolsaas.platform.repository.SchoolRepository;
@@ -34,7 +35,7 @@ public class DashboardScheduler {
         // findAll() charge TOUTES les écoles en mémoire (y compris
         // les suspended/deleted) juste pour en écarter la plupart ensuite.
         // Avec 500 écoles, c'est 500 lignes chargées pour rien.
-        List<School> schools = schoolRepository.findAllByStatusIn(List.of("trial", "active"));
+        List<School> schools = schoolRepository.findAllByStatusIn(List.of(SchoolStatus.TRIAL, SchoolStatus.ACTIVE));
 
         log.info("Rafraîchissement des dashboards — {} école(s) active(s)", schools.size());
 

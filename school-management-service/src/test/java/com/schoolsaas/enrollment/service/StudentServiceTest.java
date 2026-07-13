@@ -1,5 +1,6 @@
 package com.schoolsaas.enrollment.service;
 
+import com.schoolsaas.common.enums.Gender;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.dto.request.CreateStudentRequest;
 import com.schoolsaas.enrollment.dto.response.StudentResponse;
@@ -127,7 +128,7 @@ class StudentServiceTest {
         request.setFirstName("Awa");
         request.setLastName("Diallo");
         request.setDateOfBirth(LocalDate.of(2012, 5, 10));
-        request.setGender("F");
+        request.setGender(Gender.MALE);
         request.setBirthCity("Conakry");
         request.setBirthCountry("GN");
         request.setAddress("Matoto");
@@ -142,7 +143,7 @@ class StudentServiceTest {
                 .firstName("Awa")
                 .lastName("Diallo")
                 .dateOfBirth(LocalDate.of(2012, 5, 10))
-                .gender("F")
+                .gender(Gender.FEMALE)
                 .birthCity("Conakry")
                 .birthCountry("GN")
                 .address("Matoto")

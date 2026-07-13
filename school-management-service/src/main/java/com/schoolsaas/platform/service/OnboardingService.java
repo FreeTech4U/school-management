@@ -1,8 +1,9 @@
 package com.schoolsaas.platform.service;
 
+import com.schoolsaas.common.enums.SchoolStatus;
+import com.schoolsaas.common.enums.SubscriptionStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.common.util.SlugUtils;
-import com.schoolsaas.config.multitenancy.TenantContext;
 import com.schoolsaas.platform.dto.request.OnboardingRequest;
 import com.schoolsaas.platform.dto.response.OnboardingResponse;
 import com.schoolsaas.platform.entity.School;
@@ -69,7 +70,7 @@ public class OnboardingService {
                 .phone(request.getPhone())
                 .city(request.getCity())
                 .countryCode(request.getCountryCode())
-                .status("trial")
+                .status(SchoolStatus.TRIAL)
                 .timezone(request.getTimezone())
                 .currency(request.getCurrency())
                 .build();
@@ -81,7 +82,7 @@ public class OnboardingService {
                 .plan(plan)
                 .startDate(LocalDate.now())
                 .endDate(LocalDate.now().plusDays(30))
-                .status("active")
+                .status(SubscriptionStatus.ACTIVE)
                 .autoRenew(true)
                 .build();
         subscriptionRepository.save(subscription);

@@ -5,7 +5,6 @@ import com.schoolsaas.attendance.dto.response.AttendanceResponse;
 import com.schoolsaas.attendance.entity.Attendance;
 import com.schoolsaas.common.enums.AttendanceStatus;
 import com.schoolsaas.common.enums.Period;
-import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
@@ -44,11 +43,8 @@ class AttendanceMapperTest {
         UUID enrollmentId = UUID.randomUUID();
         UUID attendanceId = UUID.randomUUID();
 
-        StudentEnrollment enrollment = StudentEnrollment.builder().build();
-        enrollment.setId(enrollmentId);
-
         Attendance entity = Attendance.builder()
-                .enrollment(enrollment)
+                .enrollmentId(enrollmentId)
                 .date(LocalDate.now())
                 .period(Period.AFTERNOON)
                 .status(AttendanceStatus.ABSENT)

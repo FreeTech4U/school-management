@@ -1,17 +1,33 @@
 package com.schoolsaas.enrollment.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.PromotionBatchStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Represents a batch promotion operation for students.
- * Tracks promotion of students from one academic year to the next,
- * or repetition in the same class.
+ * Traitement de promotion de fin d'année, classe par classe (F-19).
+ *
+ * Ce n'est PAS une donnée métier : c'est un journal d'orchestration. Il permet
+ * de dérouler une promotion en trois temps, au lieu d'un bouton irréversible qui
+ * écrirait directement dans enrollments :
+ *
+ *   CREATED   → le système calcule les propositions
+ *               (moyenne ≥ seuil → PROMOTED, sinon REPEATED).
+ *               Rien n'est encore écrit dans enrollments.
+ *   VALIDATED → le directeur a relu, ajusté les cas limites, et confirmé.
+ *   EXECUTED  → les inscriptions de l'année suivante sont réellement créées.
+ *   CANCELLED → traitement abandonné.
+ *
+ * CORRECTION : status passe d'un String libre à l'enum PromotionBatchStatus.
+ *
+ * NOTE : prévu pour la phase 3. L'entité existe, le service correspondant n'est
+ * pas implémenté dans le MVP.
  */
 @Entity
 @Table(name = "promotion_batches")
@@ -22,74 +38,54 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PromotionBatch extends BaseEntity {
 
-    /**
-     * Current academic year being promoted from
-     */
+    /** Année d'origine. INTER-domaine (→ academic) : UUID. */
     @Column(name = "academic_year_id", nullable = false)
     private UUID academicYearId;
 
-    /**
-     * Next academic year for promotion
-     */
+    /** Année de destination. */
     @Column(name = "next_academic_year_id", nullable = false)
     private UUID nextAcademicYearId;
 
-    /**
-     * The class being promoted
-     */
+    /** Classe traitée. */
     @Column(name = "class_id", nullable = false)
     private UUID classId;
 
-    /**
-     * Status: CREATED -> VALIDATED -> EXECUTED
-     */
-    @Column(nullable = false)
-    private String status = "CREATED"; // CREATED, VALIDATED, EXECUTED, CANCELLED
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private PromotionBatchStatus status = PromotionBatchStatus.CREATED;
 
-    /**
-     * Count of promoted students (promotion to next class)
-     */
-    @Column(name = "promoted_count")
+    @Column(name = "promoted_count", nullable = false)
+    @Builder.Default
     private Integer promotedCount = 0;
 
-    /**
-     * Count of repeated students (repeat same class)
-     */
-    @Column(name = "repeated_count")
+    @Column(name = "repeated_count", nullable = false)
+    @Builder.Default
     private Integer repeatedCount = 0;
 
-    /**
-     * Count of graduated students (last class of level)
-     */
-    @Column(name = "graduated_count")
+    @Column(name = "graduated_count", nullable = false)
+    @Builder.Default
     private Integer graduatedCount = 0;
 
-    /**
-     * Total count of enrollments processed
-     */
-    @Column(name = "total_processed")
+    @Column(name = "total_processed", nullable = false)
+    @Builder.Default
     private Integer totalProcessed = 0;
 
     /**
-     * Validation errors, if any
+     * Blocages empêchant l'exécution, ex :
+     * « 3 élèves sans moyenne finale — bulletins du T3 non publiés ».
      */
     @Column(name = "validation_errors", columnDefinition = "TEXT")
     private String validationErrors;
 
-    /**
-     * Timestamp when promotion was executed
-     */
+    /** CORRECTION : Instant (colonne TIMESTAMPTZ). */
     @Column(name = "executed_at")
-    private LocalDateTime executedAt;
+    private Instant executedAt;
 
-    /**
-     * Notes about the batch
-     */
+    @Column(columnDefinition = "TEXT")
     private String notes;
 
-    /**
-     * Director's approval/comment
-     */
-    @Column(name = "director_comment")
+    @Column(name = "director_comment", columnDefinition = "TEXT")
     private String directorComment;
 }
+

@@ -54,12 +54,12 @@ public class EnrollmentService {
 
         // 3. Create Enrollment
         StudentEnrollment enrollment = StudentEnrollment.builder()
-                .studentId(student.getId())
+                .student(student)
                 .classId(schoolClass.getId())
                 .academicYearId(year.getId())
                 .enrollmentDate(request.getEnrollmentDate())
                 .isRepeating(request.getIsRepeating())
-                .status(EnrollmentStatus.ACTIVE)
+                .status(EnrollmentStatus.ENROLLED)
                 .promotionStatus(PromotionStatus.PENDING)
                 .build();
 
@@ -77,7 +77,7 @@ public class EnrollmentService {
         
         return enrollmentRepository.findByClassId(classId).stream()
                 .map(e -> {
-                    Student s = studentRepository.findById(e.getStudentId()).orElse(null);
+                    Student s = studentRepository.findById(e.getStudent().getId()).orElse(null);
                     AcademicYear y = academicYearRepository.findById(e.getAcademicYearId()).orElse(null);
                     return mapToResponse(e, s, schoolClass, y);
                 })
@@ -97,14 +97,14 @@ public class EnrollmentService {
     public void withdrawStudent(UUID enrollmentId) {
         StudentEnrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> BusinessException.notFound("ENROLLMENT_NOT_FOUND", "Inscription introuvable"));
-        enrollment.setStatus(EnrollmentStatus.DROPPED_OUT);
+        enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollmentRepository.save(enrollment);
     }
 
     private EnrollmentResponse mapToResponse(StudentEnrollment e, Student s, SchoolClass c, AcademicYear y) {
         return EnrollmentResponse.builder()
                 .id(e.getId())
-                .studentId(e.getStudentId())
+                .studentId(e.getStudent().getId())
                 .studentName(s != null ? s.getFirstName() + " " + s.getLastName() : "Unknown")
                 .studentNumber(s != null ? s.getStudentNumber() : null)
                 .classId(e.getClassId())

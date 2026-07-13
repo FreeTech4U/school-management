@@ -5,6 +5,7 @@ import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.SchoolClassRepository;
 import com.schoolsaas.academic.repository.TermRepository;
 import com.schoolsaas.common.enums.EnrollmentStatus;
+import com.schoolsaas.common.enums.PromotionBatchStatus;
 import com.schoolsaas.common.enums.PromotionStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.entity.PromotionBatch;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -79,7 +81,7 @@ public class PromotionService {
                 .classId(classId)
                 .academicYearId(academicYearId)
                 .nextAcademicYearId(nextAcademicYearId)
-                .status("CREATED")
+                .status(PromotionBatchStatus.CREATED)
                 .totalProcessed(0)
                 .promotedCount(0)
                 .repeatedCount(0)
@@ -108,7 +110,7 @@ public class PromotionService {
                 .orElseThrow(() -> BusinessException.notFound("PROMOTION_BATCH_NOT_FOUND", 
                         "Batch de promotion introuvable"));
 
-        if (!"CREATED".equals(batch.getStatus())) {
+        if (batch.getStatus() != PromotionBatchStatus.CREATED) {
             throw new BusinessException("INVALID_BATCH_STATUS", 
                     "Le batch doit être en status CREATED pour valider");
         }
@@ -116,11 +118,11 @@ public class PromotionService {
         // Get all active enrollments in the class for current academic year
         List<StudentEnrollment> enrollments = enrollmentRepository
                 .findByClassIdAndStatusAndAcademicYearId(
-                        batch.getClassId(), EnrollmentStatus.ACTIVE, batch.getAcademicYearId());
+                        batch.getClassId(), EnrollmentStatus.ENROLLED, batch.getAcademicYearId());
 
         if (enrollments.isEmpty()) {
             batch.setValidationErrors("Aucun élève trouvé dans la classe");
-            batch.setStatus("VALIDATED");
+            batch.setStatus(PromotionBatchStatus.VALIDATED);
             return promotionBatchRepository.save(batch);
         }
 
@@ -133,7 +135,7 @@ public class PromotionService {
         for (StudentEnrollment enrollment : enrollments) {
             if (enrollment.getFinalAverage() == null) {
                 errors.add(String.format("Élève %s (ID: %s) - Moyenne finale non calculée", 
-                        enrollment.getStudentId(), enrollment.getId()));
+                        enrollment.getStudent().getId(), enrollment.getId()));
             } else {
                 validCount++;
             }
@@ -143,7 +145,7 @@ public class PromotionService {
         if (!errors.isEmpty()) {
             batch.setValidationErrors(String.join(" | ", errors));
         }
-        batch.setStatus("VALIDATED");
+        batch.setStatus(PromotionBatchStatus.VALIDATED);
 
         promotionBatchRepository.save(batch);
         log.info("Validated {} out of {} enrollments", validCount, enrollments.size());
@@ -171,7 +173,7 @@ public class PromotionService {
                 .orElseThrow(() -> BusinessException.notFound("PROMOTION_BATCH_NOT_FOUND", 
                         "Batch de promotion introuvable"));
 
-        if (!"VALIDATED".equals(batch.getStatus())) {
+        if (batch.getStatus() != PromotionBatchStatus.VALIDATED) {
             throw new BusinessException("INVALID_BATCH_STATUS", 
                     "Le batch doit être en status VALIDATED pour exécuter la promotion");
         }
@@ -179,7 +181,7 @@ public class PromotionService {
         // Get all active enrollments in the class for current academic year
         List<StudentEnrollment> enrollments = enrollmentRepository
                 .findByClassIdAndStatusAndAcademicYearId(
-                        batch.getClassId(), EnrollmentStatus.ACTIVE, batch.getAcademicYearId());
+                        batch.getClassId(), EnrollmentStatus.ENROLLED, batch.getAcademicYearId());
 
         int promotedCount = 0;
         int repeatedCount = 0;
@@ -205,14 +207,14 @@ public class PromotionService {
                 promotedCount++;
             } else {
                 // Student failed - retain in same class
-                promotionStatus = PromotionStatus.RETAINED;
+                promotionStatus = PromotionStatus.REPEATED;
                 nextClassId = batch.getClassId(); // Same class
                 repeatedCount++;
             }
 
             // Update enrollment status
             enrollment.setPromotionStatus(promotionStatus);
-            enrollment.setStatus(EnrollmentStatus.ACTIVE); // Mark as processed for current year
+            enrollment.setStatus(EnrollmentStatus.ENROLLED); // Mark as processed for current year
 
             // TODO: Create new enrollment for next academic year
             // This would involve:
@@ -224,8 +226,8 @@ public class PromotionService {
         }
 
         // Update batch with results
-        batch.setStatus("EXECUTED");
-        batch.setExecutedAt(LocalDateTime.now());
+        batch.setStatus(PromotionBatchStatus.EXECUTED);
+        batch.setExecutedAt(Instant.now());
         batch.setPromotedCount(promotedCount);
         batch.setRepeatedCount(repeatedCount);
         batch.setGraduatedCount(graduatedCount);

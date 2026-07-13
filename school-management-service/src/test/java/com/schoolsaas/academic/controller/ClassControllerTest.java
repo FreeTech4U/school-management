@@ -4,8 +4,8 @@ import com.schoolsaas.academic.entity.ClassSubject;
 import com.schoolsaas.academic.entity.Level;
 import com.schoolsaas.academic.entity.SchoolClass;
 import com.schoolsaas.academic.entity.Subject;
+import com.schoolsaas.academic.entity.AcademicYear;
 import com.schoolsaas.academic.service.ClassService;
-import com.schoolsaas.identity.entity.User;
 import com.schoolsaas.support.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,22 +131,24 @@ class ClassControllerTest extends AbstractControllerTest {
                         .contentType("application/json")
                         .content(asJson(classSubject)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.classId").value(classId.toString()));
+                .andExpect(jsonPath("$.data.schoolClass.id").value(classId.toString()));
     }
 
     private Level level(String name, int orderIndex) {
-        Level level = Level.builder().name(name).orderIndex(orderIndex).build();
+        Level level = Level.builder().name(name).orderIndex((short) orderIndex).build();
         level.setId(UUID.randomUUID());
         return level;
     }
 
     private SchoolClass schoolClass(String name) {
+        AcademicYear year = AcademicYear.builder().label("2025-2026").build();
+        year.setId(UUID.randomUUID());
         SchoolClass schoolClass = SchoolClass.builder()
-                .academicYearId(UUID.randomUUID())
+                .academicYear(year)
                 .level(level("College", 1))
                 .name(name)
                 .option("Sciences")
-                .capacity(40)
+                .capacity((short) 40)
                 .roomNumber("A12")
                 .build();
         schoolClass.setId(UUID.randomUUID());
@@ -154,16 +156,16 @@ class ClassControllerTest extends AbstractControllerTest {
     }
 
     private ClassSubject classSubject(UUID classId) {
-        User teacher = User.builder().firstName("Mamadou").lastName("Diallo").email("t@test.com").passwordHash("x").role("TEACHER").build();
-        teacher.setId(UUID.randomUUID());
+        SchoolClass schoolClass = schoolClass("7e A");
+        schoolClass.setId(classId);
         Subject subject = Subject.builder().name("Maths").code("MATH").color("#fff").isActive(true).build();
         subject.setId(UUID.randomUUID());
         ClassSubject classSubject = ClassSubject.builder()
-                .classId(classId)
+                .schoolClass(schoolClass)
                 .subject(subject)
-                .teacher(teacher)
-                .coefficient(2)
-                .weeklyHours(4)
+                .teacherId(UUID.randomUUID())
+                .coefficient((short) 2)
+                .weeklyHours((short) 4)
                 .build();
         classSubject.setId(UUID.randomUUID());
         return classSubject;

@@ -4,6 +4,7 @@ import com.schoolsaas.common.enums.FeeType;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,7 +24,7 @@ public class FeeStructureResponse {
     private BigDecimal amount;
     private LocalDate dueDate;
     private Boolean installmentsAllowed;
-    private Integer maxInstallments;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Short maxInstallments;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

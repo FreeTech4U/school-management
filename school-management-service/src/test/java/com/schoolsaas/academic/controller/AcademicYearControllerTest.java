@@ -2,6 +2,7 @@ package com.schoolsaas.academic.controller;
 
 import com.schoolsaas.academic.entity.AcademicYear;
 import com.schoolsaas.academic.entity.Term;
+import com.schoolsaas.common.enums.YearStatus;
 import com.schoolsaas.academic.service.AcademicYearService;
 import com.schoolsaas.support.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
@@ -111,7 +112,7 @@ class AcademicYearControllerTest extends AbstractControllerTest {
                 .startDate(LocalDate.of(2025, 9, 1))
                 .endDate(LocalDate.of(2026, 7, 31))
                 .isCurrent(true)
-                .status("ACTIVE")
+                .status(YearStatus.ACTIVE)
                 .build();
         year.setId(UUID.randomUUID());
         return year;
@@ -120,7 +121,7 @@ class AcademicYearControllerTest extends AbstractControllerTest {
     private Term term(String name) {
         Term term = Term.builder()
                 .name(name)
-                .termNumber(1)
+                .termNumber((short) 1)
                 .startDate(LocalDate.of(2025, 9, 1))
                 .endDate(LocalDate.of(2025, 12, 20))
                 .isCurrent(true)

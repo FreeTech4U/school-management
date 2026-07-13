@@ -17,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @ExtendWith(MockitoExtension.class)
 class GradeServiceTest {
 
@@ -35,12 +38,16 @@ class GradeServiceTest {
     @Test
     void enterGrade_WithClosedTerm_ShouldThrowException() {
         // Given
+        UUID termId = UUID.randomUUID();
         Term term = new Term();
         term.setGradesEntryOpen(false);
+        term.setId(termId);
 
         Grade grade = Grade.builder()
-                .term(term)
+                .termId(termId)
+                .classSubjectId(UUID.randomUUID())
                 .build();
+        when(termRepository.findById(termId)).thenReturn(Optional.of(term));
 
         // When & Then
         assertThrows(BusinessException.class, () -> gradeService.enterGrade(grade));

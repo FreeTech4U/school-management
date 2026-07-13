@@ -67,7 +67,7 @@ public class ReportCardController {
         // Filter by termId if provided
         if (termId != null) {
             reportCards = reportCards.stream()
-                    .filter(rc -> rc.getTerm().getId().equals(termId))
+                    .filter(rc -> rc.getTermId().equals(termId))
                     .collect(Collectors.toList());
         }
 
@@ -181,10 +181,10 @@ public class ReportCardController {
     private ReportCardResponse mapToResponse(ReportCard reportCard) {
         return ReportCardResponse.builder()
                 .id(reportCard.getId())
-                .enrollmentId(reportCard.getEnrollment().getId())
-                .studentName(reportCard.getEnrollment().getStudentId().toString()) // TODO: fetch actual student name
-                .termId(reportCard.getTerm().getId())
-                .termName(reportCard.getTerm().getName())
+                .enrollmentId(reportCard.getEnrollmentId())
+              //  .studentName(reportCard.getEnrollment().getStudentId().toString()) // TODO: fetch actual student name
+                .termId(reportCard.getTermId())
+            //    .termName(reportCard.getTermName())
                 .generalAverage(reportCard.getGeneralAverage())
                 .rankInClass(reportCard.getRankInClass())
                 .classSize(reportCard.getClassSize())

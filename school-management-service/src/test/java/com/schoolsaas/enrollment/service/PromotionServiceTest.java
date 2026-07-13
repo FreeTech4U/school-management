@@ -5,9 +5,11 @@ import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.SchoolClassRepository;
 import com.schoolsaas.academic.repository.TermRepository;
 import com.schoolsaas.common.enums.EnrollmentStatus;
+import com.schoolsaas.common.enums.PromotionBatchStatus;
 import com.schoolsaas.common.enums.PromotionStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.entity.PromotionBatch;
+import com.schoolsaas.enrollment.entity.Student;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import com.schoolsaas.enrollment.repository.PromotionBatchRepository;
 import com.schoolsaas.enrollment.repository.StudentEnrollmentRepository;
@@ -71,7 +73,7 @@ class PromotionServiceTest {
 
         PromotionBatch batch = promotionService.createPromotionBatch(classId, academicYearId, nextAcademicYearId, "Fin d'année");
 
-        assertEquals("CREATED", batch.getStatus());
+        assertEquals(PromotionBatchStatus.CREATED, batch.getStatus());
         assertEquals(classId, batch.getClassId());
         assertEquals(0, batch.getPromotedCount());
         assertEquals("Fin d'année", batch.getNotes());
@@ -101,13 +103,13 @@ class PromotionServiceTest {
         StudentEnrollment invalid = enrollment(UUID.randomUUID(), classId, academicYearId, null);
 
         when(promotionBatchRepository.findById(batchId)).thenReturn(Optional.of(batch));
-        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ACTIVE, academicYearId))
+        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ENROLLED, academicYearId))
                 .thenReturn(List.of(valid, invalid));
         when(promotionBatchRepository.save(any(PromotionBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PromotionBatch validated = promotionService.validatePromotionCriteria(batchId);
 
-        assertEquals("VALIDATED", validated.getStatus());
+        assertEquals(PromotionBatchStatus.VALIDATED, validated.getStatus());
         assertEquals(2, validated.getTotalProcessed());
         assertNotNull(validated.getValidationErrors());
         assertTrue(validated.getValidationErrors().contains("Moyenne finale non calculée"));
@@ -119,26 +121,26 @@ class PromotionServiceTest {
         UUID classId = UUID.randomUUID();
         UUID academicYearId = UUID.randomUUID();
         PromotionBatch batch = batch(batchId, classId, academicYearId);
-        batch.setStatus("VALIDATED");
+        batch.setStatus(PromotionBatchStatus.VALIDATED);
 
         StudentEnrollment promoted = enrollment(UUID.randomUUID(), classId, academicYearId, "12.50");
         StudentEnrollment retained = enrollment(UUID.randomUUID(), classId, academicYearId, "08.25");
 
         when(promotionBatchRepository.findById(batchId)).thenReturn(Optional.of(batch));
-        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ACTIVE, academicYearId))
+        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ENROLLED, academicYearId))
                 .thenReturn(List.of(promoted, retained));
         when(enrollmentRepository.save(any(StudentEnrollment.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(promotionBatchRepository.save(any(PromotionBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PromotionBatch executed = promotionService.executePromotion(batchId);
 
-        assertEquals("EXECUTED", executed.getStatus());
+        assertEquals(PromotionBatchStatus.EXECUTED, executed.getStatus());
         assertNotNull(executed.getExecutedAt());
         assertEquals(1, executed.getPromotedCount());
         assertEquals(1, executed.getRepeatedCount());
         assertEquals(0, executed.getGraduatedCount());
         assertEquals(PromotionStatus.PROMOTED, promoted.getPromotionStatus());
-        assertEquals(PromotionStatus.RETAINED, retained.getPromotionStatus());
+        assertEquals(PromotionStatus.REPEATED, retained.getPromotionStatus());
         verify(enrollmentRepository, times(2)).save(any(StudentEnrollment.class));
     }
 
@@ -178,9 +180,9 @@ class PromotionServiceTest {
         when(enrollmentRepository.save(enrollment)).thenReturn(enrollment);
 
         StudentEnrollment updated = promotionService.overridePromotionDecision(
-                enrollmentId, PromotionStatus.OVERRIDDEN, "Décision exceptionnelle");
+                enrollmentId, PromotionStatus.REPEATED, "Décision exceptionnelle");
 
-        assertEquals(PromotionStatus.OVERRIDDEN, updated.getPromotionStatus());
+        assertEquals(PromotionStatus.REPEATED, updated.getPromotionStatus());
         verify(enrollmentRepository).save(enrollment);
     }
 
@@ -197,18 +199,20 @@ class PromotionServiceTest {
                 .classId(classId)
                 .academicYearId(academicYearId)
                 .nextAcademicYearId(UUID.randomUUID())
-                .status("CREATED")
+                .status(PromotionBatchStatus.CREATED)
                 .build();
         batch.setId(id);
         return batch;
     }
 
     private StudentEnrollment enrollment(UUID id, UUID classId, UUID academicYearId, String finalAverage) {
+        Student student = Student.builder().firstName("Awa").lastName("Diallo").build();
+        student.setId(UUID.randomUUID());
         StudentEnrollment enrollment = StudentEnrollment.builder()
-                .studentId(UUID.randomUUID())
+                .student(student)
                 .classId(classId)
                 .academicYearId(academicYearId)
-                .status(EnrollmentStatus.ACTIVE)
+                .status(EnrollmentStatus.ENROLLED)
                 .promotionStatus(PromotionStatus.PENDING)
                 .finalAverage(finalAverage != null ? new BigDecimal(finalAverage) : null)
                 .build();

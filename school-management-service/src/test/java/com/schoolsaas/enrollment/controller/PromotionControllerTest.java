@@ -1,5 +1,6 @@
 package com.schoolsaas.enrollment.controller;
 
+import com.schoolsaas.common.enums.PromotionBatchStatus;
 import com.schoolsaas.enrollment.dto.request.CreatePromotionBatchRequest;
 import com.schoolsaas.enrollment.entity.PromotionBatch;
 import com.schoolsaas.enrollment.repository.PromotionBatchRepository;
@@ -12,7 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -88,7 +89,7 @@ class PromotionControllerTest extends AbstractControllerTest {
     @WithMockUser(roles = "DIRECTOR")
     void executePromotion_WithDirectorRole_ShouldReturnExecutedBatch() throws Exception {
         PromotionBatch batch = batch("EXECUTED");
-        batch.setExecutedAt(LocalDateTime.now());
+        batch.setExecutedAt(Instant.now());
         batch.setPromotedCount(12);
         batch.setRepeatedCount(3);
         when(promotionService.executePromotion(batch.getId())).thenReturn(batch);
@@ -136,7 +137,7 @@ class PromotionControllerTest extends AbstractControllerTest {
                 .classId(UUID.randomUUID())
                 .academicYearId(UUID.randomUUID())
                 .nextAcademicYearId(UUID.randomUUID())
-                .status(status)
+                .status(PromotionBatchStatus.valueOf(status))
                 .promotedCount(0)
                 .repeatedCount(0)
                 .graduatedCount(0)
@@ -144,7 +145,7 @@ class PromotionControllerTest extends AbstractControllerTest {
                 .notes("Traitement annuel")
                 .build();
         batch.setId(UUID.randomUUID());
-        batch.setCreatedAt(LocalDateTime.now());
+        batch.setCreatedAt(Instant.now());
         return batch;
     }
 }

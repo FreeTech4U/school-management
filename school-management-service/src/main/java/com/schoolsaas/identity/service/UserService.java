@@ -1,5 +1,6 @@
 package com.schoolsaas.identity.service;
 
+import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.identity.dto.request.CreateUserRequest;
 import com.schoolsaas.identity.dto.response.UserResponse;
@@ -57,7 +58,7 @@ public class UserService {
 
         user = userRepository.save(user);
 
-        if ("TEACHER".equals(request.getRole())) {
+        if (Role.TEACHER.equals(request.getRole())) {
             Teacher teacher = Teacher.builder()
                     .user(user)
                     .employeeNumber(request.getEmployeeNumber())

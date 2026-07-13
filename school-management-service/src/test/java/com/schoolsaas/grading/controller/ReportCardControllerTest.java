@@ -1,9 +1,6 @@
 package com.schoolsaas.grading.controller;
 
-import com.schoolsaas.academic.entity.AcademicYear;
-import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.common.enums.ReportCardStatus;
-import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import com.schoolsaas.grading.dto.request.GenerateReportCardsRequest;
 import com.schoolsaas.grading.dto.request.ReportCardCommentsRequest;
 import com.schoolsaas.grading.entity.ReportCard;
@@ -18,8 +15,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -96,7 +92,7 @@ class ReportCardControllerTest extends AbstractControllerTest {
         mockMvc.perform(get("/api/v1/school/report-cards/{id}", card.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(card.getId().toString()))
-                .andExpect(jsonPath("$.data.studentName").value(card.getEnrollment().getStudentId().toString()));
+                .andExpect(jsonPath("$.data.enrollmentId").value(card.getEnrollmentId().toString()));
     }
 
     @Test
@@ -125,7 +121,7 @@ class ReportCardControllerTest extends AbstractControllerTest {
     void publishReportCard_WithDirectorRole_ShouldReturnPublishedCard() throws Exception {
         ReportCard published = reportCard(UUID.randomUUID());
         published.setStatus(ReportCardStatus.PUBLISHED);
-        published.setPublishedAt(LocalDateTime.now());
+        published.setPublishedAt(Instant.now());
 
         when(reportCardService.publish(published.getId())).thenReturn(published);
 
@@ -167,44 +163,21 @@ class ReportCardControllerTest extends AbstractControllerTest {
 
     private ReportCard reportCard(UUID termId) {
         UUID enrollmentId = UUID.randomUUID();
-        UUID studentId = UUID.randomUUID();
         UUID reportCardId = UUID.randomUUID();
-        UUID academicYearId = UUID.randomUUID();
-
-        AcademicYear academicYear = AcademicYear.builder()
-                .label("2025-2026")
-                .build();
-        academicYear.setId(academicYearId);
-
-        Term term = Term.builder()
-                .academicYear(academicYear)
-                .name("Trimestre 1")
-                .termNumber(1)
-                .startDate(LocalDate.of(2025, 9, 1))
-                .endDate(LocalDate.of(2025, 12, 20))
-                .build();
-        term.setId(termId);
-
-        StudentEnrollment enrollment = StudentEnrollment.builder()
-                .studentId(studentId)
-                .classId(UUID.randomUUID())
-                .academicYearId(academicYearId)
-                .build();
-        enrollment.setId(enrollmentId);
 
         ReportCard card = ReportCard.builder()
-                .enrollment(enrollment)
-                .term(term)
+                .enrollmentId(enrollmentId)
+                .termId(termId)
                 .generalAverage(new BigDecimal("14.25"))
-                .rankInClass(3)
-                .classSize(28)
+                .rankInClass((short) 3)
+                .classSize((short) 28)
                 .teacherComment("Bien")
                 .directorComment("Continuez")
                 .status(ReportCardStatus.DRAFT)
                 .pdfUrl("https://cdn/report.pdf")
                 .build();
         card.setId(reportCardId);
-        card.setCreatedAt(LocalDateTime.now());
+        card.setCreatedAt(Instant.now());
         return card;
     }
 }

@@ -4,6 +4,7 @@ import com.schoolsaas.common.enums.FeeStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -25,5 +26,5 @@ public class StudentFeeResponse {
     private String discountReason;
     private LocalDate dueDate;
     private FeeStatus status;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

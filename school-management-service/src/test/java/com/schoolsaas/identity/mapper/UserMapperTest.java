@@ -1,5 +1,6 @@
 package com.schoolsaas.identity.mapper;
 
+import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.identity.dto.response.UserResponse;
 import com.schoolsaas.identity.entity.User;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class UserMapperTest {
                 .firstName("John")
                 .lastName("Doe")
                 .email("john.doe@example.com")
-                .role("DIRECTOR")
+                .role(Role.DIRECTOR)
                 .isActive(true)
                 .build();
         user.setId(UUID.randomUUID());
@@ -35,7 +36,7 @@ class UserMapperTest {
         assertEquals(user.getFirstName(), response.getFirstName());
         assertEquals(user.getLastName(), response.getLastName());
         assertEquals(user.getEmail(), response.getEmail());
-        assertEquals(user.getRole(), response.getRole());
+        assertEquals(user.getRole().name(), response.getRole());
         assertEquals(user.getIsActive(), response.getIsActive());
     }
 }

@@ -1,5 +1,6 @@
 package com.schoolsaas.timetable.dto.request;
 
+import com.schoolsaas.common.enums.DayOfWeek;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,8 +14,8 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class TimeSlotRequest {
     
-    @NotBlank(message = "dayOfWeek is required")
-    private String dayOfWeek; // MONDAY..SATURDAY
+    @NotNull(message = "dayOfWeek is required")
+    private DayOfWeek dayOfWeek; // MONDAY..SATURDAY
     
     @NotNull(message = "startTime is required")
     private LocalTime startTime;
@@ -27,5 +28,5 @@ public class TimeSlotRequest {
     private String label;
     
     @Min(value = 0, message = "orderIndex must be >= 0")
-    private Integer orderIndex;
+    private Short orderIndex;
 }

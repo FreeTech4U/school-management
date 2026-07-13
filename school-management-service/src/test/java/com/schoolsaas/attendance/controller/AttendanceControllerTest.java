@@ -6,6 +6,7 @@ import com.schoolsaas.attendance.repository.AttendanceRepository;
 import com.schoolsaas.attendance.service.AttendanceService;
 import com.schoolsaas.common.enums.AttendanceStatus;
 import com.schoolsaas.common.enums.Period;
+import com.schoolsaas.enrollment.entity.Student;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import com.schoolsaas.enrollment.repository.StudentEnrollmentRepository;
 import com.schoolsaas.support.AbstractControllerTest;
@@ -137,8 +138,17 @@ class AttendanceControllerTest extends AbstractControllerTest {
     }
 
     private StudentEnrollment enrollment(UUID id) {
+        return enrollment(id, UUID.randomUUID());
+    }
+
+    private StudentEnrollment enrollment(UUID id, UUID studentId) {
+        Student student = Student.builder()
+                .firstName("Awa")
+                .lastName("Diallo")
+                .build();
+        student.setId(studentId);
         StudentEnrollment enrollment = StudentEnrollment.builder()
-                .studentId(UUID.randomUUID())
+                .student(student)
                 .classId(UUID.randomUUID())
                 .academicYearId(UUID.randomUUID())
                 .build();
@@ -151,11 +161,10 @@ class AttendanceControllerTest extends AbstractControllerTest {
     }
 
     private Attendance attendance(UUID enrollmentId, UUID studentId, AttendanceStatus status) {
-        StudentEnrollment enrollment = enrollment(enrollmentId);
-        enrollment.setStudentId(studentId);
+        StudentEnrollment enrollment = enrollment(enrollmentId, studentId);
 
         Attendance attendance = Attendance.builder()
-                .enrollment(enrollment)
+                .enrollmentId(enrollment.getId())
                 .date(LocalDate.of(2026, 2, 17))
                 .period(Period.MORNING)
                 .status(status)

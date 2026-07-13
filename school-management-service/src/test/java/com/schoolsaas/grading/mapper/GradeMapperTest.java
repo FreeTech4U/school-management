@@ -61,9 +61,9 @@ class GradeMapperTest {
         term.setId(termId);
 
         Grade entity = Grade.builder()
-                .enrollment(enrollment)
-                .classSubject(classSubject)
-                .term(term)
+                .enrollmentId(enrollmentId)
+                .classSubjectId(classSubjectId)
+                .termId(termId)
                 .value(BigDecimal.valueOf(18.0))
                 .evaluationType(EvaluationType.COMPOSITION)
                 .evaluationLabel("Composition Trimestre 1")

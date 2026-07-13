@@ -2,6 +2,7 @@ package com.schoolsaas.finance.controller;
 
 import com.schoolsaas.common.enums.FeeStatus;
 import com.schoolsaas.common.enums.FeeType;
+import com.schoolsaas.enrollment.entity.Student;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import com.schoolsaas.finance.dto.request.FeeStructureRequest;
 import com.schoolsaas.finance.dto.request.StudentFeeDiscountRequest;
@@ -161,7 +162,7 @@ class FeeStructureControllerTest extends AbstractControllerTest {
                 .amount(new BigDecimal("45000"))
                 .dueDate(LocalDate.of(2026, 3, 5))
                 .installmentsAllowed(true)
-                .maxInstallments(3)
+                .maxInstallments((short) 3)
                 .build();
     }
 
@@ -185,14 +186,15 @@ class FeeStructureControllerTest extends AbstractControllerTest {
         structure.setId(UUID.randomUUID());
 
         StudentEnrollment enrollment = StudentEnrollment.builder()
-                .studentId(UUID.randomUUID())
+                .student(new Student())
                 .classId(UUID.randomUUID())
                 .academicYearId(UUID.randomUUID())
                 .build();
         enrollment.setId(UUID.randomUUID());
+        enrollment.getStudent().setId(UUID.randomUUID());
 
         StudentFee fee = StudentFee.builder()
-                .enrollment(enrollment)
+                .enrollmentId(enrollment.getId())
                 .feeStructure(structure)
                 .amountDue(new BigDecimal("45000"))
                 .amountPaid(new BigDecimal("15000"))

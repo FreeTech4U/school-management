@@ -9,58 +9,70 @@ import lombok.*;
 
 import java.util.UUID;
 
+/**
+ * Affectation d'une matière à une classe, avec son enseignant et son coefficient.
+ *
+ * Le coefficient sert au calcul de la moyenne générale (F-16) :
+ *   moyenne = Σ(moyenne_matière × coefficient) / Σ(coefficients)
+ *
+ * DEUX CORRECTIONS IMPORTANTES :
+ *
+ * 1. teacher passe d'une @ManyToOne<User> à un UUID.
+ *    User appartient au domaine identity/. Une @ManyToOne créait une dépendance
+ *    academic → identity, interdite par la règle d'architecture. Pour obtenir le
+ *    nom de l'enseignant, le service passe par UserService.
+ *
+ * 2. teacherId devient NULLABLE, et la validation @PrePersist qui levait une
+ *    exception quand teacher était null a été supprimée.
+ *    Les specs (F-07) prévoient explicitement qu'une matière puisse être créée
+ *    AVANT qu'un enseignant y soit affecté. Le code précédent rendait ce cas
+ *    impossible, en contradiction directe avec la colonne SQL (nullable) et avec
+ *    le ON DELETE SET NULL de la clé étrangère.
+ *
+ * Les validations de plage (coefficient entre 1 et 10) sont assurées par les
+ * contraintes CHECK en base et par la Bean Validation sur les DTO d'entrée.
+ * Les dupliquer dans un @PrePersist qui lève des IllegalArgumentException est
+ * redondant et produit des erreurs 500 au lieu d'erreurs 400 explicites.
+ */
 @Entity
-@Table(name = "class_subjects", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_class_subject", columnNames = {"class_id", "subject_id"})
-})
+@Table(
+        name = "class_subjects",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_class_subject",
+                columnNames = {"class_id", "subject_id"}
+        )
+)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class ClassSubject extends BaseEntity {
 
-    @Column(name = "class_id", nullable = false)
-    private UUID classId;
+    /** INTRA-domaine : @ManyToOne. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "class_id", nullable = false)
+    private SchoolClass schoolClass;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    /** INTRA-domaine : @ManyToOne. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id", nullable = false)
-    private User teacher;
+    /**
+     * INTER-domaine (academic → identity) : UUID, pas d'association JPA.
+     * NULLABLE : la matière peut exister avant l'affectation d'un enseignant.
+     */
+    @Column(name = "teacher_id")
+    private UUID teacherId;
 
+    /** Entre 1 et 10 (CHECK en base). */
     @Column(nullable = false)
-    @Min(value = 1, message = "Coefficient minimum est 1")
-    @Max(value = 10, message = "Coefficient maximum est 10")
-    private Integer coefficient = 1;
+    @Builder.Default
+    private Short coefficient = 1;
 
     @Column(name = "weekly_hours")
-    @Min(value = 1, message = "Heures hebdomadaires minimum est 1")
-    @Max(value = 50, message = "Heures hebdomadaires maximum est 50")
-    private Integer weeklyHours;
-
-    @PrePersist
-    @PreUpdate
-    private void validate() {
-        if (coefficient == null) {
-            coefficient = 1;
-        }
-        if (coefficient < 1 || coefficient > 10) {
-            throw new IllegalArgumentException("Coefficient must be between 1 and 10");
-        }
-        if (weeklyHours != null && (weeklyHours < 1 || weeklyHours > 50)) {
-            throw new IllegalArgumentException("Weekly hours must be between 1 and 50");
-        }
-        if (classId == null) {
-            throw new IllegalArgumentException("Class ID is required");
-        }
-        if (subject == null) {
-            throw new IllegalArgumentException("Subject is required");
-        }
-        if (teacher == null) {
-            throw new IllegalArgumentException("Teacher is required");
-        }
-    }
+    private Short weeklyHours;
 }
+

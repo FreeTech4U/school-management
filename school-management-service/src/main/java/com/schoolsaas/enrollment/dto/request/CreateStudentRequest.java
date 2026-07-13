@@ -1,5 +1,6 @@
 package com.schoolsaas.enrollment.dto.request;
 
+import com.schoolsaas.common.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -17,8 +18,8 @@ public class CreateStudentRequest {
     @NotNull(message = "La date de naissance est obligatoire")
     private LocalDate dateOfBirth;
 
-    @NotBlank(message = "Le genre est obligatoire")
-    private String gender;
+    @NotNull(message = "Le genre est obligatoire")
+    private Gender gender;
 
     private String birthCity;
     private String birthCountry = "GN";

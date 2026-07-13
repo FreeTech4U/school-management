@@ -133,16 +133,16 @@ le nom matche `^[a-zA-Z0-9_]+$` — lever `IllegalArgumentException` sinon.
 ```
 src/main/resources/db/migration/
 ├── public/
-│   └── V1__init_public_schema.sql    ← tables public: schools, subscription_plans,
+│   └── V1__init_public_schema2.sql    ← tables public: schools, subscription_plans,
 │                                        school_subscriptions, subscription_payments
 └── tenant/
-    └── V1__init_tenant_schema.sql    ← toutes les tables métier + triggers + vue matérialisée
+    └── V1__init_tenant_schema2.sql    ← toutes les tables métier + triggers + vue matérialisée
 ```
 
 La migration `tenant/V1` est appliquée par `TenantMigrationService` lors
 de l'onboarding de chaque nouvelle école (pas au démarrage de l'app).
 
-### Triggers PostgreSQL obligatoires dans V1__init_tenant_schema.sql
+### Triggers PostgreSQL obligatoires dans V1__init_tenant_schema2.sql
 
 ```sql
 -- 1. Matricule élève auto-généré : EL-YYYY-NNNN
@@ -331,7 +331,7 @@ public SmsProvider activeSmsProvider(...) {
 }
 ```
 
-### Templates pré-chargés à l'onboarding (dans V1__init_tenant_schema.sql)
+### Templates pré-chargés à l'onboarding (dans V1__init_tenant_schema2.sql)
 
 ```sql
 INSERT INTO sms_templates (code, category, content_fr, variables) VALUES
@@ -393,8 +393,8 @@ Génère les fichiers dans cet ordre précis pour éviter les dépendances manqu
 ÉTAPE 1 — Infrastructure de base
   pom.xml
   application.yml (profils dev et prod)
-  src/main/resources/db/migration/public/V1__init_public_schema.sql
-  src/main/resources/db/migration/tenant/V1__init_tenant_schema.sql
+  src/main/resources/db/migration/public/V1__init_public_schema2.sql
+  src/main/resources/db/migration/tenant/V1__init_tenant_schema2.sql
 
 ÉTAPE 2 — Config et Common
   config/multitenancy/ (TenantContext, TenantIdentifierResolver, SchemaMultiTenantConnectionProvider)

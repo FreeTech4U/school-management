@@ -1,5 +1,7 @@
 package com.schoolsaas.platform.scheduler;
 
+import com.schoolsaas.common.enums.SchoolStatus;
+import com.schoolsaas.common.enums.SubscriptionStatus;
 import com.schoolsaas.platform.entity.SchoolSubscription;
 import com.schoolsaas.platform.repository.SchoolSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +37,10 @@ public class SubscriptionScheduler {
         LocalDate today = LocalDate.now();
 
         for (SchoolSubscription sub : subscriptions) {
-            if ("active".equals(sub.getStatus()) && sub.getEndDate().isBefore(today)) {
+            if (SubscriptionStatus.ACTIVE.equals(sub.getStatus()) && sub.getEndDate().isBefore(today)) {
                 log.info("Subscription for school {} expired", sub.getSchool().getName());
-                sub.setStatus("expired");
-                sub.getSchool().setStatus("suspended");
+                sub.setStatus(SubscriptionStatus.EXPIRED);
+                sub.getSchool().setStatus(SchoolStatus.SUSPENDED);
                 subscriptionRepository.save(sub);
             }
         }

@@ -1,5 +1,6 @@
 package com.schoolsaas.timetable.controller;
 
+import com.schoolsaas.common.enums.DayOfWeek;
 import com.schoolsaas.support.AbstractControllerTest;
 import com.schoolsaas.timetable.dto.request.TimeSlotRequest;
 import com.schoolsaas.timetable.dto.request.TimetableEntryRequest;
@@ -14,7 +15,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -57,11 +58,11 @@ class TimetableControllerTest extends AbstractControllerTest {
     @WithMockUser(roles = "DIRECTOR")
     void createTimeSlot_WithDirectorRole_ShouldCreateTimeSlot() throws Exception {
         TimeSlotRequest request = TimeSlotRequest.builder()
-                .dayOfWeek("MONDAY")
+                .dayOfWeek(DayOfWeek.MONDAY)
                 .startTime(LocalTime.of(8, 0))
                 .endTime(LocalTime.of(10, 0))
                 .label("08:00-10:00")
-                .orderIndex(1)
+                .orderIndex((short) 1)
                 .build();
         TimeSlot slot = timeSlot();
         when(timeSlotRepository.save(any(TimeSlot.class))).thenReturn(slot);
@@ -77,11 +78,11 @@ class TimetableControllerTest extends AbstractControllerTest {
     @WithMockUser(roles = "DIRECTOR")
     void updateTimeSlot_WithDirectorRole_ShouldUpdateTimeSlot() throws Exception {
         TimeSlotRequest request = TimeSlotRequest.builder()
-                .dayOfWeek("MONDAY")
+                .dayOfWeek(DayOfWeek.MONDAY)
                 .startTime(LocalTime.of(10, 0))
                 .endTime(LocalTime.of(12, 0))
                 .label("10:00-12:00")
-                .orderIndex(2)
+                .orderIndex((short) 2)
                 .build();
         TimeSlot slot = timeSlot();
         when(timeSlotRepository.findById(slot.getId())).thenReturn(Optional.of(slot));
@@ -189,27 +190,29 @@ class TimetableControllerTest extends AbstractControllerTest {
 
     private TimeSlot timeSlot() {
         TimeSlot slot = TimeSlot.builder()
-                .dayOfWeek("MONDAY")
+                .dayOfWeek(DayOfWeek.MONDAY)
                 .startTime(LocalTime.of(8, 0))
                 .endTime(LocalTime.of(10, 0))
                 .label("08:00-10:00")
-                .orderIndex(1)
+                .orderIndex((short) 1)
                 .build();
         slot.setId(UUID.randomUUID());
         return slot;
     }
 
     private TimetableEntry timetableEntry(TimetableEntryRequest request) {
+        TimeSlot slot = timeSlot();
+        slot.setId(request.getTimeSlotId());
         TimetableEntry entry = TimetableEntry.builder()
                 .classSubjectId(request.getClassSubjectId())
-                .timeSlotId(request.getTimeSlotId())
+                .timeSlot(slot)
                 .academicYearId(request.getAcademicYearId())
                 .termId(request.getTermId())
                 .roomNumber(request.getRoomNumber())
                 .isActive(request.getIsActive())
                 .build();
         entry.setId(UUID.randomUUID());
-        entry.setCreatedAt(LocalDateTime.now());
+        entry.setCreatedAt(Instant.now());
         return entry;
     }
 }

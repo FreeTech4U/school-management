@@ -3,10 +3,12 @@ package com.schoolsaas.grading.service;
 import com.schoolsaas.academic.entity.AcademicYear;
 import com.schoolsaas.academic.entity.ClassSubject;
 import com.schoolsaas.academic.entity.Term;
+import com.schoolsaas.academic.repository.ClassSubjectRepository;
 import com.schoolsaas.academic.repository.TermRepository;
 import com.schoolsaas.common.enums.EnrollmentStatus;
 import com.schoolsaas.common.enums.ReportCardStatus;
 import com.schoolsaas.common.exception.BusinessException;
+import com.schoolsaas.enrollment.entity.Student;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import com.schoolsaas.enrollment.repository.StudentEnrollmentRepository;
 import com.schoolsaas.grading.entity.Grade;
@@ -21,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +44,8 @@ class ReportCardServiceTest {
     private StudentEnrollmentRepository enrollmentRepository;
     @Mock
     private TermRepository termRepository;
+    @Mock
+    private ClassSubjectRepository classSubjectRepository;
 
     @InjectMocks
     private ReportCardService reportCardService;
@@ -57,6 +62,7 @@ class ReportCardServiceTest {
                 grade(subject1, "14"),
                 grade(subject2, "16")
         ));
+        when(classSubjectRepository.findAllById(any())).thenReturn(List.of(subject1, subject2));
 
         BigDecimal result = reportCardService.calculateWeightedAverage(enrollmentId, termId);
 
@@ -74,14 +80,17 @@ class ReportCardServiceTest {
         StudentEnrollment enrollment2 = enrollment(UUID.randomUUID(), classId, academicYearId);
         ReportCard card1 = reportCard(enrollment1, term);
         ReportCard card2 = reportCard(enrollment2, term);
+        ClassSubject subject1 = classSubject(2);
+        ClassSubject subject2 = classSubject(3);
 
         when(termRepository.findById(termId)).thenReturn(Optional.of(term));
-        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ACTIVE, academicYearId))
+        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ENROLLED, academicYearId))
                 .thenReturn(List.of(enrollment1, enrollment2));
         when(gradeRepository.findByEnrollmentIdAndTermId(enrollment1.getId(), termId))
-                .thenReturn(List.of(grade(classSubject(2), "12"), grade(classSubject(3), "18")));
+                .thenReturn(List.of(grade(subject1, "12"), grade(subject2, "18")));
         when(gradeRepository.findByEnrollmentIdAndTermId(enrollment2.getId(), termId))
-                .thenReturn(List.of(grade(classSubject(2), "10"), grade(classSubject(3), "14")));
+                .thenReturn(List.of(grade(subject1, "10"), grade(subject2, "14")));
+        when(classSubjectRepository.findAllById(any())).thenReturn(List.of(subject1, subject2));
         when(reportCardRepository.findByEnrollmentIdAndTermId(enrollment1.getId(), termId)).thenReturn(Optional.of(card1));
         when(reportCardRepository.findByEnrollmentIdAndTermId(enrollment2.getId(), termId)).thenReturn(Optional.of(card2));
         when(reportCardRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -92,12 +101,12 @@ class ReportCardServiceTest {
         assertEquals(2, generated);
         assertEquals(new BigDecimal("15.60"), card1.getGeneralAverage());
         assertEquals(new BigDecimal("12.40"), card2.getGeneralAverage());
-        assertEquals(2, card1.getClassSize());
-        assertEquals(2, card2.getClassSize());
+        assertEquals(Short.valueOf((short) 2), card1.getClassSize());
+        assertEquals(Short.valueOf((short) 2), card2.getClassSize());
         assertEquals(ReportCardStatus.DRAFT, card1.getStatus());
         assertEquals(ReportCardStatus.DRAFT, card2.getStatus());
-        assertEquals(1, card1.getRankInClass());
-        assertEquals(2, card2.getRankInClass());
+        assertEquals(Short.valueOf((short) 1), card1.getRankInClass());
+        assertEquals(Short.valueOf((short) 2), card2.getRankInClass());
         verify(reportCardRepository, times(2)).saveAll(any());
     }
 
@@ -109,7 +118,7 @@ class ReportCardServiceTest {
         Term term = term(termId, academicYearId);
 
         when(termRepository.findById(termId)).thenReturn(Optional.of(term));
-        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ACTIVE, academicYearId))
+        when(enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(classId, EnrollmentStatus.ENROLLED, academicYearId))
                 .thenReturn(List.of());
 
         int generated = reportCardService.generateForClass(classId, termId);
@@ -161,7 +170,7 @@ class ReportCardServiceTest {
         ReportCard publishedCard = reportCard(enrollment2, term(termId, UUID.randomUUID()));
         draftCard.setStatus(ReportCardStatus.DRAFT);
         publishedCard.setStatus(ReportCardStatus.PUBLISHED);
-        publishedCard.setPublishedAt(java.time.LocalDateTime.now());
+        publishedCard.setPublishedAt(Instant.now());
 
         when(enrollmentRepository.findByClassId(classId)).thenReturn(List.of(enrollment1, enrollment2));
         when(reportCardRepository.findByEnrollmentIdAndTermId(enrollment1.getId(), termId)).thenReturn(Optional.of(draftCard));
@@ -199,7 +208,9 @@ class ReportCardServiceTest {
 
     private Grade grade(ClassSubject classSubject, String value) {
         return Grade.builder()
-                .classSubject(classSubject)
+                .classSubjectId(classSubject.getId())
+                .enrollmentId(UUID.randomUUID())
+                .termId(UUID.randomUUID())
                 .value(new BigDecimal(value))
                 .evaluationDate(LocalDate.now())
                 .evaluationLabel("Eval")
@@ -208,18 +219,20 @@ class ReportCardServiceTest {
 
     private ClassSubject classSubject(int coefficient) {
         ClassSubject classSubject = ClassSubject.builder()
-                .coefficient(coefficient)
+                .coefficient((short) coefficient)
                 .build();
         classSubject.setId(UUID.randomUUID());
         return classSubject;
     }
 
     private StudentEnrollment enrollment(UUID id, UUID classId, UUID academicYearId) {
+        Student student = Student.builder().firstName("Awa").lastName("Diallo").build();
+        student.setId(UUID.randomUUID());
         StudentEnrollment enrollment = StudentEnrollment.builder()
-                .studentId(UUID.randomUUID())
+                .student(student)
                 .classId(classId)
                 .academicYearId(academicYearId)
-                .status(EnrollmentStatus.ACTIVE)
+                .status(EnrollmentStatus.ENROLLED)
                 .build();
         enrollment.setId(id);
         return enrollment;
@@ -234,7 +247,7 @@ class ReportCardServiceTest {
         Term term = Term.builder()
                 .academicYear(academicYear)
                 .name("Trimestre 1")
-                .termNumber(1)
+                .termNumber((short) 1)
                 .startDate(LocalDate.of(2025, 9, 1))
                 .endDate(LocalDate.of(2025, 12, 20))
                 .build();
@@ -244,8 +257,8 @@ class ReportCardServiceTest {
 
     private ReportCard reportCard(StudentEnrollment enrollment, Term term) {
         ReportCard reportCard = ReportCard.builder()
-                .enrollment(enrollment)
-                .term(term)
+                .enrollmentId(enrollment.getId())
+                .termId(term.getId())
                 .status(ReportCardStatus.DRAFT)
                 .build();
         reportCard.setId(UUID.randomUUID());

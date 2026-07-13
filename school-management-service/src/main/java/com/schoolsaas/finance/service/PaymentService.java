@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,7 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .studentId(request.getStudentId())
                 .amount(request.getAmount())
-                .paymentDate(request.getPaymentDate().atStartOfDay()) // Simplification
+           //     .paymentDate(request.getPaymentDate().atStartOfDay()) // Simplification
                 .paymentMethod(PaymentMethod.valueOf(request.getPaymentMethod()))
                 .referenceNumber(request.getReferenceNumber())
                 .notes(request.getNotes())
@@ -98,7 +99,7 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> BusinessException.notFound("PAYMENT_NOT_FOUND", "Paiement introuvable"));
 
-        if (payment.getCreatedAt().isBefore(LocalDateTime.now().minusHours(24))) {
+        if (payment.getCreatedAt().isBefore(Instant.now().minusSeconds(24 * 3600))) {
             throw new BusinessException("CANCELLATION_WINDOW_EXPIRED", "Impossible d'annuler un paiement vieux de plus de 24h");
         }
 

@@ -768,9 +768,9 @@ POST   /api/v1/school/promotions/process-class/{classId}  [DIRECTOR]   → trait
 ```
 src/main/resources/db/migration/
 ├── public/
-│   └── V1__init_public_schema.sql     → tables: schools, subscription_plans, school_subscriptions, subscription_payments
+│   └── V1__init_public_schema2.sql     → tables: schools, subscription_plans, school_subscriptions, subscription_payments
 └── tenant/
-    └── V1__init_tenant_schema.sql     → toutes les tables métier + triggers + vue matérialisée
+    └── V1__init_tenant_schema2.sql     → toutes les tables métier + triggers + vue matérialisée
 ```
 
 **Triggers PostgreSQL dans V1__init_tenant_schema.sql :**

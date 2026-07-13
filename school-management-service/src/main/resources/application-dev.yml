@@ -18,6 +18,7 @@ spring:
     # En dev on tolère qu'un script déjà appliqué ait été modifié —
     # ça évite de devoir DROP le schema à chaque itération.
     validate-on-migrate: false
+    locations: classpath:db/migration/public,classpath:db/migration/seed
     clean-disabled: false        # permet mvn flyway:clean pour repartir de zéro
 
 server:

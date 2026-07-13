@@ -1,5 +1,7 @@
 package com.schoolsaas.identity.service;
 
+import com.schoolsaas.common.enums.Role;
+import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.config.multitenancy.TenantContext;
 import com.schoolsaas.config.security.AuthenticatedUser;
@@ -18,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,7 +42,7 @@ public class AuthService {
         log.info("Login attempt for email: {} in tenant: {}", request.getEmail(), request.getTenantSlug());
 
         // 1. Load School
-        School school = schoolRepository.findBySlugAndStatusIn(request.getTenantSlug(), List.of("active", "trial"))
+        School school = schoolRepository.findBySlugAndStatusIn(request.getTenantSlug(), List.of(SchoolStatus.ACTIVE, SchoolStatus.TRIAL))
                 .orElseThrow(() -> BusinessException.notFound("TENANT_NOT_FOUND", "École inactive ou inexistante"));
 
         // 2. Set Tenant Context
@@ -56,7 +59,7 @@ public class AuthService {
             }
 
             // 5. Update last login
-            user.setLastLoginAt(LocalDateTime.now());
+            user.setLastLoginAt(Instant.now());
             userRepository.save(user);
 
             // 6. Generate Tokens
@@ -64,7 +67,7 @@ public class AuthService {
                     .userId(user.getId())
                     .email(user.getEmail())
                     .tenantId(school.getSchemaName())
-                    .roles(List.of(user.getRole()))
+                    .roles(List.of(user.getRole().name()))
                     .build();
 
             String accessToken = jwtService.generateToken(authenticatedUser);
@@ -78,7 +81,7 @@ public class AuthService {
                             .id(user.getId())
                             .fullName(user.getFirstName() + " " + user.getLastName())
                             .email(user.getEmail())
-                            .roles(List.of(user.getRole()))
+                            .roles(List.of(user.getRole().name()))
                             .tenantId(school.getId())
                             .schoolName(school.getName())
                             .build())

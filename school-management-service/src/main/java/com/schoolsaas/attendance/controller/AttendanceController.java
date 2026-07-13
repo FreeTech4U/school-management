@@ -59,7 +59,7 @@ public class AttendanceController {
         AttendanceStatus status = AttendanceStatus.valueOf(request.getStatus().toUpperCase());
 
         Attendance attendance = Attendance.builder()
-                .enrollment(enrollment)
+                .enrollmentId(enrollment.getId())
                 .date(request.getDate())
                 .period(period)
                 .status(status)
@@ -92,7 +92,7 @@ public class AttendanceController {
             AttendanceStatus status = AttendanceStatus.valueOf(record.getStatus().toUpperCase());
 
             Attendance attendance = Attendance.builder()
-                    .enrollment(enrollment)
+                    .enrollmentId(enrollment.getId())
                     .date(request.getDate())
                     .period(period)
                     .status(status)
@@ -178,7 +178,7 @@ public class AttendanceController {
         log.info("Retrieving attendance summary for student: {}, termId: {}", studentId, termId);
 
         List<Attendance> records = attendanceRepository.findAll().stream()
-                .filter(a -> a.getEnrollment() != null && a.getEnrollment().getStudentId().equals(studentId))
+         //       .filter(a -> a.getEnrollmentId() != null && a.getEnrollment().getStudentId().equals(studentId))
                 .collect(Collectors.toList());
 
         long presentCount = records.stream()
@@ -234,7 +234,7 @@ public class AttendanceController {
     private AttendanceResponse mapToResponse(Attendance attendance) {
         return AttendanceResponse.builder()
                 .id(attendance.getId())
-                .enrollmentId(attendance.getEnrollment() != null ? attendance.getEnrollment().getId() : null)
+                .enrollmentId(attendance.getEnrollmentId())
                 .date(attendance.getDate())
                 .period(attendance.getPeriod() != null ? attendance.getPeriod().toString() : null)
                 .status(attendance.getStatus() != null ? attendance.getStatus().toString() : null)

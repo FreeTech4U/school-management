@@ -7,6 +7,7 @@ import com.schoolsaas.common.enums.Period;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.entity.Student;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
+import com.schoolsaas.enrollment.repository.StudentEnrollmentRepository;
 import com.schoolsaas.enrollment.repository.StudentRepository;
 import com.schoolsaas.communication.service.SmsService;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,8 @@ class AttendanceServiceTest {
 
     @Mock
     private StudentRepository studentRepository;
+    @Mock
+    private StudentEnrollmentRepository enrollmentRepository;
 
     @Mock
     private SmsService smsService;
@@ -46,7 +49,7 @@ class AttendanceServiceTest {
         enrollment.setId(enrollmentId);
 
         Attendance attendance = Attendance.builder()
-                .enrollment(enrollment)
+                .enrollmentId(enrollmentId)
                 .date(LocalDate.now())
                 .period(Period.MORNING)
                 .status(AttendanceStatus.PRESENT)
@@ -74,7 +77,9 @@ class AttendanceServiceTest {
         
         StudentEnrollment enrollment = StudentEnrollment.builder().build();
         enrollment.setId(enrollmentId);
-        enrollment.setStudentId(studentId);
+        Student studentRef = new Student();
+        studentRef.setId(studentId);
+        enrollment.setStudent(studentRef);
 
         Student student = Student.builder()
                 .parentPhone("+1234567890")
@@ -85,7 +90,7 @@ class AttendanceServiceTest {
         student.setId(studentId);
 
         Attendance attendance = Attendance.builder()
-                .enrollment(enrollment)
+                .enrollmentId(enrollmentId)
                 .date(LocalDate.now())
                 .period(Period.AFTERNOON)
                 .status(AttendanceStatus.ABSENT)
@@ -94,6 +99,7 @@ class AttendanceServiceTest {
         when(attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(enrollmentId, LocalDate.now(), Period.AFTERNOON))
                 .thenReturn(false);
         when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
 
         // When
@@ -113,7 +119,7 @@ class AttendanceServiceTest {
         enrollment.setId(enrollmentId);
 
         Attendance attendance = Attendance.builder()
-                .enrollment(enrollment)
+                .enrollmentId(enrollmentId)
                 .date(LocalDate.now())
                 .period(Period.FULL_DAY)
                 .status(AttendanceStatus.PRESENT)

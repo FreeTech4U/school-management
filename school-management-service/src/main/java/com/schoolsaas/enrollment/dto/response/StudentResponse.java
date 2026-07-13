@@ -1,5 +1,6 @@
 package com.schoolsaas.enrollment.dto.response;
 
+import com.schoolsaas.common.enums.Gender;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,7 +15,7 @@ public class StudentResponse {
     private String firstName;
     private String lastName;
     private LocalDate dateOfBirth;
-    private String gender;
+    private Gender gender;
     private String photoUrl;
     private String parentName;
     private String parentPhone;

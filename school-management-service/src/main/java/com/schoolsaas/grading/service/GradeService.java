@@ -26,18 +26,16 @@ public class GradeService {
 
     @Transactional
     public Grade enterGrade(Grade grade) {
-        Term term = grade.getTerm();
-        if (term == null) {
-            term = termRepository.findById(grade.getTerm().getId())
-                    .orElseThrow(() -> BusinessException.notFound("TERM_NOT_FOUND", "Trimestre introuvable"));
-        }
+        Term term = termRepository.findById(grade.getTermId())
+                .orElseThrow(() -> BusinessException.notFound("TERM_NOT_FOUND", "Trimestre introuvable"));;
+
 
         if (!Boolean.TRUE.equals(term.getGradesEntryOpen())) {
             throw new BusinessException("GRADES_ENTRY_CLOSED", "La saisie des notes est fermée pour ce trimestre");
         }
 
         // Logic to verify teacher assignment
-        verifyTeacherAssignment(grade.getClassSubject().getId());
+        verifyTeacherAssignment(grade.getClassSubjectId());
 
         return gradeRepository.save(grade);
     }
@@ -48,7 +46,7 @@ public class GradeService {
             if (user.getRoles().contains("TEACHER")) {
                 ClassSubject cs = classSubjectRepository.findById(classSubjectId)
                         .orElseThrow(() -> BusinessException.notFound("CLASS_SUBJECT_NOT_FOUND", "Matière de classe introuvable"));
-                if (!user.getUserId().equals(cs.getTeacher().getId())) {
+                if (!user.getUserId().equals(cs.getTeacherId())) {
                     throw BusinessException.forbidden("UNAUTHORIZED_SUBJECT", "Vous n'êtes pas affecté à cette matière");
                 }
             }

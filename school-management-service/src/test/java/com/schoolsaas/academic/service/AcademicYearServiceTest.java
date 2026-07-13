@@ -4,6 +4,7 @@ import com.schoolsaas.academic.entity.AcademicYear;
 import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.TermRepository;
+import com.schoolsaas.common.enums.YearStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,7 +53,7 @@ class AcademicYearServiceTest {
         UUID id = UUID.randomUUID();
         AcademicYear year = new AcademicYear();
         year.setId(id);
-        year.setStatus("ACTIVE");
+        year.setStatus(YearStatus.ACTIVE);
         year.setIsCurrent(true);
 
         when(academicYearRepository.findById(id)).thenReturn(Optional.of(year));
@@ -61,7 +62,7 @@ class AcademicYearServiceTest {
         academicYearService.closeYear(id);
 
         // Then
-        assertEquals("CLOSED", year.getStatus());
+        assertEquals(YearStatus.CLOSED, year.getStatus());
         assertFalse(year.getIsCurrent());
         verify(academicYearRepository).save(year);
     }

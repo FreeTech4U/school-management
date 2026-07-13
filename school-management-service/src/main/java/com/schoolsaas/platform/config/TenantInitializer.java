@@ -1,5 +1,6 @@
 package com.schoolsaas.platform.config;
 
+import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.platform.entity.School;
 import com.schoolsaas.platform.repository.SchoolRepository;
 import com.schoolsaas.platform.service.TenantMigrationService;
@@ -31,7 +32,7 @@ public class TenantInitializer implements CommandLineRunner {
     public void run(String... args) {
         log.info("Starting database migration for all active tenants...");
         
-        List<School> activeSchools = schoolRepository.findAllByStatusIn(Arrays.asList("trial", "active"));
+        List<School> activeSchools = schoolRepository.findAllByStatusIn(Arrays.asList(SchoolStatus.TRIAL, SchoolStatus.ACTIVE));
         
         log.info("Found {} active schools to migrate.", activeSchools.size());
         

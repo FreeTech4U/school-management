@@ -1,14 +1,22 @@
 package com.schoolsaas.platform.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.schoolsaas.common.enums.SchoolStatus;
+import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Représente une école (tenant) dans la plateforme SchoolSaaS.
- * Chaque école possède son propre schéma de base de données pour l'isolation des données.
+ * École (tenant) de la plateforme SaaS.
+ *
+ * ⚠ Cette entité vit dans le schema PUBLIC — d'où @Table(schema = "public").
+ *   Les entités des autres domaines n'ont PAS d'attribut schema : elles vivent
+ *   dans le schema tenant courant, résolu dynamiquement par Hibernate via le
+ *   TenantContext.
+ *
+ * schemaName est concaténé dans des requêtes SQL (SET search_path,
+ * CREATE SCHEMA, REFRESH MATERIALIZED VIEW) car PostgreSQL n'autorise pas les
+ * paramètres préparés pour les noms d'objets. Une contrainte CHECK en base
+ * (^[a-z0-9_]+$) et une validation regex côté Java protègent de l'injection.
  */
 @Entity
 @Table(name = "schools", schema = "public")
@@ -19,46 +27,71 @@ import lombok.*;
 @AllArgsConstructor
 public class School extends BaseEntity {
 
-    /** Nom de l'école */
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String name;
 
-    /** Identifiant unique textuel utilisé dans les URLs */
-    @Column(unique = true, nullable = false)
+    /** Identifiant public de l'école, saisi au login. Ex : ste-marie-dixinn. */
+    @Column(nullable = false, unique = true, length = 255)
     private String slug;
 
-    /** Nom du schéma PostgreSQL dédié à cette école */
-    @Column(name = "schema_name", unique = true, nullable = false)
+    /**
+     * Nom du schema PostgreSQL dédié. Ex : tenant_ste_marie.
+     * VARCHAR(63) : limite stricte de PostgreSQL pour un identifiant.
+     */
+    @Column(name = "schema_name", nullable = false, unique = true, length = 63)
     private String schemaName;
 
-    /** Adresse email de contact principal */
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    /** Numéro de téléphone de contact */
+    @Column(length = 20)
     private String phone;
 
-    /** Adresse physique de l'école */
+    @Column(columnDefinition = "TEXT")
     private String address;
 
-    /** Ville de résidence */
+    @Column(length = 100)
     private String city;
 
-    /** Code pays (ex: GN pour la Guinée) */
-    @Column(name = "country_code", length = 3)
+    @Column(name = "country_code", nullable = false, length = 3)
+    @Builder.Default
     private String countryCode = "GN";
 
-    /** URL vers le logo de l'école */
     @Column(name = "logo_url")
     private String logoUrl;
 
-    /** Statut actuel (trial, active, suspended, deleted) */
-    @Column(nullable = false)
-    private String status = "trial"; // trial, active, suspended, deleted
+    /**
+     * TRIAL · ACTIVE · SUSPENDED · DELETED
+     * CORRECTION : les valeurs étaient en minuscules ('trial', 'active') dans
+     * l'ancien script SQL. Un enum Java annoté @Enumerated(EnumType.STRING)
+     * écrit le NOM de la constante — donc TRIAL. La contrainte CHECK aurait
+     * rejeté le premier INSERT.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private SchoolStatus status = SchoolStatus.TRIAL;
 
-    /** Fuseau horaire utilisé pour les opérations académiques */
+    /**
+     * Fuseau horaire de l'école. DONNÉE MÉTIER, pas réglage technique.
+     *
+     * Les schedulers se déclenchent toutes les heures en UTC et filtrent les
+     * écoles pour lesquelles il est actuellement l'heure locale voulue
+     * (8h pour les rappels SMS, minuit pour la bascule des frais en OVERDUE).
+     * Une école à Conakry et une à Abidjan reçoivent ainsi leurs SMS à 8h
+     * CHEZ ELLES, avec un seul scheduler.
+     */
+    @Column(nullable = false, length = 50)
+    @Builder.Default
     private String timezone = "Africa/Conakry";
 
-    /** Devise monétaire par défaut pour la finance */
+    @Column(nullable = false, length = 3)
+    @Builder.Default
     private String currency = "GNF";
+
+    /** TenantInitializer et les schedulers ne traitent que ces écoles. */
+    @Transient
+    public boolean isOperational() {
+        return status != null && status.isOperational();
+    }
 }

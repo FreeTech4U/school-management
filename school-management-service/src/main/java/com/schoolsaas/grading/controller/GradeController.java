@@ -62,9 +62,9 @@ public class GradeController {
                 .orElseThrow(() -> BusinessException.notFound("TERM_NOT_FOUND", "Term not found"));
 
         Grade grade = Grade.builder()
-                .enrollment(enrollment)
-                .classSubject(classSubject)
-                .term(term)
+                .enrollmentId(enrollment.getId())
+                .classSubjectId(classSubject.getId())
+                .termId(term.getId())
                 .value(request.getValue())
                 .evaluationType(com.schoolsaas.common.enums.EvaluationType.valueOf(request.getEvaluationType().toUpperCase()))
                 .evaluationLabel(request.getEvaluationLabel())
@@ -100,9 +100,9 @@ public class GradeController {
                     .orElseThrow(() -> BusinessException.notFound("ENROLLMENT_NOT_FOUND", "Student enrollment not found"));
             
             Grade grade = Grade.builder()
-                    .enrollment(enrollment)
-                    .classSubject(classSubject)
-                    .term(term)
+                    .enrollmentId(enrollment.getId())
+                    .classSubjectId(classSubject.getId())
+                    .termId(term.getId())
                     .value(item.getValue())
                     .evaluationType(com.schoolsaas.common.enums.EvaluationType.valueOf(request.getEvaluationType().toUpperCase()))
                     .evaluationLabel(request.getEvaluationLabel())
@@ -135,7 +135,7 @@ public class GradeController {
         // Filter by termId if provided
         if (termId != null) {
             grades = grades.stream()
-                    .filter(g -> g.getTerm() != null && g.getTerm().getId().equals(termId))
+                    .filter(g -> g.getTermId() != null && g.getTermId().equals(termId))
                     .collect(Collectors.toList());
         }
 
@@ -158,12 +158,12 @@ public class GradeController {
         log.info("Retrieving grades for enrollment: {}, termId: {}", enrollmentId, termId);
 
         List<Grade> grades = gradeRepository.findAll().stream()
-                .filter(g -> g.getEnrollment() != null && g.getEnrollment().getId().equals(enrollmentId))
+                .filter(g -> g.getEnrollmentId() != null && g.getEnrollmentId().equals(enrollmentId))
                 .collect(Collectors.toList());
         
         if (termId != null) {
             grades = grades.stream()
-                    .filter(g -> g.getTerm() != null && g.getTerm().getId().equals(termId))
+                    .filter(g -> g.getTermId() != null && g.getTermId().equals(termId))
                     .collect(Collectors.toList());
         }
 
@@ -215,9 +215,9 @@ public class GradeController {
     private GradeResponse mapToResponse(Grade grade) {
         return GradeResponse.builder()
                 .id(grade.getId())
-                .enrollmentId(grade.getEnrollment() != null ? grade.getEnrollment().getId() : null)
-                .classSubjectId(grade.getClassSubject() != null ? grade.getClassSubject().getId() : null)
-                .termId(grade.getTerm() != null ? grade.getTerm().getId() : null)
+                .enrollmentId(grade.getEnrollmentId())
+                .classSubjectId(grade.getClassSubjectId())
+                .termId(grade.getTermId())
                 .value(grade.getValue())
                 .evaluationType(grade.getEvaluationType() != null ? grade.getEvaluationType().toString() : "UNKNOWN")
                 .evaluationLabel(grade.getEvaluationLabel())

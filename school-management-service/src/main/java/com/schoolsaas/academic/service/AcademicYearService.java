@@ -4,6 +4,7 @@ import com.schoolsaas.academic.entity.AcademicYear;
 import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.TermRepository;
+import com.schoolsaas.common.enums.YearStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -63,7 +64,7 @@ public class AcademicYearService {
     @Transactional
     public void closeYear(UUID id) {
         AcademicYear year = getYearById(id);
-        year.setStatus("CLOSED");
+        year.setStatus(YearStatus.CLOSED);
         year.setIsCurrent(false);
         academicYearRepository.save(year);
         // Trigger promotions (Phase 2)

@@ -1,5 +1,7 @@
 package com.schoolsaas.identity.service;
 
+import com.schoolsaas.common.enums.Role;
+import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.config.security.AuthenticatedUser;
 import com.schoolsaas.config.security.JwtService;
@@ -50,13 +52,13 @@ class AuthServiceTest {
 
         School school = new School();
         school.setSchemaName("school_test");
-        school.setStatus("active");
+        school.setStatus(SchoolStatus.ACTIVE);
         school.setName("Test School");
 
         User user = new User();
         user.setEmail("user@test.com");
         user.setPasswordHash("hashed_password");
-        user.setRole("DIRECTOR");
+        user.setRole(Role.DIRECTOR);
         user.setFirstName("John");
         user.setLastName("Doe");
 
@@ -98,7 +100,7 @@ class AuthServiceTest {
         request.setTenantSlug("test-school");
 
         School school = new School();
-        school.setStatus("active");
+        school.setStatus(SchoolStatus.ACTIVE);
 
         User user = new User();
         user.setPasswordHash("hashed");

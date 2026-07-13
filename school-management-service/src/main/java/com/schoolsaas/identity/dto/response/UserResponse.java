@@ -3,6 +3,7 @@ package com.schoolsaas.identity.dto.response;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -17,6 +18,6 @@ public class UserResponse {
     private String role;
     private String avatarUrl;
     private Boolean isActive;
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime createdAt;
+    private Instant lastLoginAt;
+    private Instant createdAt;
 }

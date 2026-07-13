@@ -1,6 +1,7 @@
 package com.schoolsaas.grading.service;
 
 import com.schoolsaas.academic.entity.Term;
+import com.schoolsaas.academic.repository.ClassSubjectRepository;
 import com.schoolsaas.academic.repository.TermRepository;
 import com.schoolsaas.common.enums.EnrollmentStatus;
 import com.schoolsaas.common.enums.ReportCardStatus;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +37,7 @@ public class ReportCardService {
     private final GradeRepository gradeRepository;
     private final StudentEnrollmentRepository enrollmentRepository;
     private final TermRepository termRepository;
+    private final ClassSubjectRepository classSubjectRepository;
 
     /**
      * Generate report cards for all active students in a class for a specific term.
@@ -53,7 +56,7 @@ public class ReportCardService {
 
         // 1. Load all ENROLLED students in the class for this academic year
         List<StudentEnrollment> enrollments = enrollmentRepository.findByClassIdAndStatusAndAcademicYearId(
-                classId, EnrollmentStatus.ACTIVE, term.getAcademicYear().getId());
+                classId, EnrollmentStatus.ENROLLED, term.getAcademicYear().getId());
 
         if (enrollments.isEmpty()) {
             log.warn("No active enrollments found for class {} in term {}", classId, termId);
@@ -73,15 +76,15 @@ public class ReportCardService {
                     
                     if (existing != null) {
                         existing.setGeneralAverage(weightedAverage);
-                        existing.setClassSize(classSize);
+                        existing.setClassSize((short) classSize);
                         existing.setStatus(ReportCardStatus.DRAFT);
                         return existing;
                     } else {
                         return ReportCard.builder()
-                                .enrollment(enrollment)
-                                .term(term)
+                                .enrollmentId(enrollment.getId())
+                                .termId(term.getId())
                                 .generalAverage(weightedAverage)
-                                .classSize(classSize)
+                                .classSize((short) classSize)
                                 .status(ReportCardStatus.DRAFT)
                                 .build();
                     }
@@ -118,7 +121,13 @@ public class ReportCardService {
 
         // Group grades by subject (classSubject) and calculate per-subject averages
         Map<UUID, List<Grade>> gradesBySubject = grades.stream()
-                .collect(Collectors.groupingBy(g -> g.getClassSubject().getId()));
+                .collect(Collectors.groupingBy(Grade::getClassSubjectId));
+        Map<UUID, Integer> coefficientsBySubject = classSubjectRepository.findAllById(gradesBySubject.keySet())
+                .stream()
+                .collect(Collectors.toMap(
+                        cs -> cs.getId(),
+                        cs -> cs.getCoefficient() != null ? cs.getCoefficient().intValue() : 0
+                ));
 
         BigDecimal totalWeightedScore = BigDecimal.ZERO;
         int totalCoefficient = 0;
@@ -132,8 +141,8 @@ public class ReportCardService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add)
                     .divide(BigDecimal.valueOf(subjectGrades.size()), 2, RoundingMode.HALF_UP);
 
-            // Get coefficient (all grades in a subject have the same coefficient)
-            int coefficient = subjectGrades.get(0).getClassSubject().getCoefficient();
+            // Get coefficient from class_subjects (grade now stores only UUID).
+            int coefficient = coefficientsBySubject.getOrDefault(entry.getKey(), 0);
 
             // Add to weighted sum
             totalWeightedScore = totalWeightedScore.add(
@@ -173,7 +182,7 @@ public class ReportCardService {
 
         // Update status and timestamp
         reportCard.setStatus(ReportCardStatus.PUBLISHED);
-        reportCard.setPublishedAt(LocalDateTime.now());
+        reportCard.setPublishedAt(Instant.now());
 
         // TODO: In Phase 4, integrate PDF generation (Thymeleaf + OpenHTMLtoPDF)
         // TODO: In Phase 4, integrate SMS notification to parent
@@ -208,7 +217,7 @@ public class ReportCardService {
 
         draftCards.forEach(card -> {
             card.setStatus(ReportCardStatus.PUBLISHED);
-            card.setPublishedAt(LocalDateTime.now());
+            card.setPublishedAt(Instant.now());
         });
 
         reportCardRepository.saveAll(draftCards);
@@ -280,7 +289,7 @@ public class ReportCardService {
 
         // Assign rankings
         for (int i = 0; i < reportCards.size(); i++) {
-            reportCards.get(i).setRankInClass(i + 1);
+            reportCards.get(i).setRankInClass((short) (i + 1));
         }
 
         reportCardRepository.saveAll(reportCards);

@@ -1,10 +1,12 @@
 package com.schoolsaas.grading.controller;
 
 import com.schoolsaas.academic.entity.ClassSubject;
+import com.schoolsaas.academic.entity.SchoolClass;
 import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.academic.repository.ClassSubjectRepository;
 import com.schoolsaas.academic.repository.TermRepository;
 import com.schoolsaas.common.enums.EvaluationType;
+import com.schoolsaas.enrollment.entity.Student;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import com.schoolsaas.enrollment.repository.StudentEnrollmentRepository;
 import com.schoolsaas.grading.dto.request.GradeRequest;
@@ -168,9 +170,9 @@ class GradeControllerTest extends AbstractControllerTest {
 
     private Grade grade(UUID enrollmentId, UUID classSubjectId, UUID termId) {
         Grade grade = Grade.builder()
-                .enrollment(enrollment(enrollmentId))
-                .classSubject(classSubject(classSubjectId))
-                .term(term(termId))
+                .enrollmentId(enrollmentId)
+                .classSubjectId(classSubjectId)
+                .termId(termId)
                 .value(new BigDecimal("15.5"))
                 .evaluationType(EvaluationType.DEVOIR)
                 .evaluationLabel("Devoir 1")
@@ -182,8 +184,10 @@ class GradeControllerTest extends AbstractControllerTest {
     }
 
     private StudentEnrollment enrollment(UUID id) {
+        Student student = Student.builder().firstName("Awa").lastName("Diallo").build();
+        student.setId(UUID.randomUUID());
         StudentEnrollment enrollment = StudentEnrollment.builder()
-                .studentId(UUID.randomUUID())
+                .student(student)
                 .classId(UUID.randomUUID())
                 .academicYearId(UUID.randomUUID())
                 .build();
@@ -193,10 +197,11 @@ class GradeControllerTest extends AbstractControllerTest {
 
     private ClassSubject classSubject(UUID id) {
         ClassSubject classSubject = ClassSubject.builder()
-                .classId(UUID.randomUUID())
-                .coefficient(2)
-                .weeklyHours(4)
+                .schoolClass(new SchoolClass())
+                .coefficient((short) 2)
+                .weeklyHours((short) 4)
                 .build();
+        classSubject.getSchoolClass().setId(UUID.randomUUID());
         classSubject.setId(id);
         return classSubject;
     }
@@ -204,7 +209,7 @@ class GradeControllerTest extends AbstractControllerTest {
     private Term term(UUID id) {
         Term term = Term.builder()
                 .name("Trimestre 2")
-                .termNumber(2)
+                .termNumber((short) 2)
                 .startDate(LocalDate.of(2026, 1, 5))
                 .endDate(LocalDate.of(2026, 3, 31))
                 .build();

@@ -1,14 +1,19 @@
 package com.schoolsaas.identity.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
+import com.schoolsaas.common.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
- * Représente un utilisateur au sein d'une école.
- * Un utilisateur est toujours rattaché à un tenant spécifique via le schéma de la base de données.
+ * Utilisateur de l'application (personnel de l'école).
+ *
+ * Un utilisateur appartient toujours à un tenant : il vit dans le schema
+ * PostgreSQL de son école. L'isolation est assurée par Hibernate via le
+ * TenantContext — aucune colonne school_id n'est nécessaire.
  */
 @Entity
 @Table(name = "users")
@@ -19,38 +24,44 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class User extends BaseEntity {
 
-    /** Prénom de l'utilisateur */
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    /** Nom de famille */
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    /** Email unique (utilisé comme identifiant de connexion) */
-    @Column(unique = true, nullable = false)
+    /** Identifiant de connexion. Unique DANS le tenant. */
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    /** Numéro de téléphone */
+    @Column(length = 20)
     private String phone;
 
-    /** Hash du mot de passe (BCrypt) */
+    /** Hash BCrypt (force 12). Jamais exposé dans un DTO. */
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    /** Rôle de l'utilisateur (ex: DIRECTOR, TEACHER, ACCOUNTANT, PARENT) */
-    @Column(nullable = false)
-    private String role; // DIRECTOR, TEACHER, ACCOUNTANT, PARENT
+    /** DIRECTOR · TEACHER · ACCOUNTANT · PARENT */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role;
 
-    /** URL vers la photo de profil */
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    /** Indique si le compte est actif */
-    @Column(name = "is_active")
+    /** Désactivation = soft delete. Un user inactif ne peut plus se connecter. */
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
-    /** Date et heure de la dernière connexion réussie */
+    /** CORRECTION : Instant (colonne TIMESTAMPTZ), et non LocalDateTime. */
     @Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
+    private Instant lastLoginAt;
+
+    /** Nom complet, utilisé dans les DTO et les SMS. */
+    @Transient
+    public String getFullName() {
+        return lastName + " " + firstName;
+    }
 }
+

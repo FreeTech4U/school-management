@@ -4,6 +4,7 @@ import com.schoolsaas.common.enums.ReportCardStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -20,12 +21,12 @@ public class ReportCardResponse {
     private UUID termId;
     private String termName;
     private BigDecimal generalAverage;
-    private Integer rankInClass;
-    private Integer classSize;
+    private Short rankInClass;
+    private Short classSize;
     private String teacherComment;
     private String directorComment;
     private ReportCardStatus status;
     private String pdfUrl;
-    private LocalDateTime publishedAt;
-    private LocalDateTime createdAt;
+    private Instant publishedAt;
+    private Instant createdAt;
 }
