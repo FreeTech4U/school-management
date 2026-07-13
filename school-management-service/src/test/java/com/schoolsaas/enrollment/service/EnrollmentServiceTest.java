@@ -4,6 +4,7 @@ import com.schoolsaas.academic.entity.AcademicYear;
 import com.schoolsaas.academic.entity.SchoolClass;
 import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.SchoolClassRepository;
+import com.schoolsaas.common.enums.EnrollmentStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.dto.request.EnrollStudentRequest;
 import com.schoolsaas.enrollment.dto.response.EnrollmentResponse;
@@ -81,7 +82,7 @@ class EnrollmentServiceTest {
 
         // Then
         assertNotNull(response);
-        assertEquals("ENROLLED", response.getStatus());
+        assertEquals("ACTIVE", response.getStatus());
         verify(studentFeeService).generateFeesForEnrollment(any(StudentEnrollment.class));
         verify(enrollmentRepository).save(any(StudentEnrollment.class));
     }
@@ -108,7 +109,7 @@ class EnrollmentServiceTest {
         UUID enrollmentId = UUID.randomUUID();
         StudentEnrollment enrollment = new StudentEnrollment();
         enrollment.setId(enrollmentId);
-        enrollment.setStatus("ENROLLED");
+        enrollment.setStatus(EnrollmentStatus.ACTIVE);
 
         when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
 
@@ -116,7 +117,7 @@ class EnrollmentServiceTest {
         enrollmentService.withdrawStudent(enrollmentId);
 
         // Then
-        assertEquals("WITHDRAWN", enrollment.getStatus());
+        assertEquals(EnrollmentStatus.DROPPED_OUT, enrollment.getStatus());
         verify(enrollmentRepository).save(enrollment);
     }
 }

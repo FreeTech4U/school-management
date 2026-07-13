@@ -1,5 +1,6 @@
 package com.schoolsaas.finance.service;
 
+import com.schoolsaas.common.enums.FeeStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.finance.dto.request.CreatePaymentRequest;
 import com.schoolsaas.finance.dto.response.PaymentResponse;
@@ -54,7 +55,7 @@ class PaymentServiceTest {
         studentFee.setAmountDue(new BigDecimal("1000"));
         studentFee.setDiscountAmount(BigDecimal.ZERO);
         studentFee.setAmountPaid(BigDecimal.ZERO);
-        studentFee.setStatus("UNPAID");
+        studentFee.setStatus(FeeStatus.UNPAID);
         studentFee.setFeeStructure(structure);
     }
 
@@ -105,14 +106,17 @@ class PaymentServiceTest {
     @Test
     void createPayment_FeeAlreadyPaid_ThrowsException() {
         // Given
-        studentFee.setStatus("PAID");
+        studentFee.setStatus(FeeStatus.PAID);
         
         CreatePaymentRequest.AllocationRequest alloc = new CreatePaymentRequest.AllocationRequest();
         alloc.setStudentFeeId(feeId);
         alloc.setAmount(new BigDecimal("1000"));
 
         CreatePaymentRequest request = new CreatePaymentRequest();
+        request.setStudentId(studentId);
         request.setAmount(new BigDecimal("1000"));
+        request.setPaymentDate(LocalDate.now());
+        request.setPaymentMethod("CASH");
         request.setAllocations(List.of(alloc));
 
         when(studentFeeRepository.findById(feeId)).thenReturn(Optional.of(studentFee));

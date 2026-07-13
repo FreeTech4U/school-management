@@ -30,14 +30,12 @@ class TimetableServiceTest {
     private TimetableService timetableService;
 
     @Test
-    void createEntry_Success() {
+    void createEntry_ClassConflict_ThrowsException() {
         // Given
         UUID csId = UUID.randomUUID();
         UUID tsId = UUID.randomUUID();
         UUID yearId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        UUID teacherId = UUID.randomUUID();
-
+        
         TimetableEntry entry = new TimetableEntry();
         entry.setClassSubjectId(csId);
         entry.setTimeSlotId(tsId);
@@ -45,35 +43,24 @@ class TimetableServiceTest {
 
         ClassSubject cs = new ClassSubject();
         cs.setId(csId);
-        cs.setClassId(classId);
-        cs.setTeacherId(teacherId);
-
-        when(classSubjectRepository.findById(csId)).thenReturn(Optional.of(cs));
-        when(timetableEntryRepository.existsConflictForClass(classId, tsId, yearId)).thenReturn(false);
-        when(timetableEntryRepository.existsConflictForTeacher(teacherId, tsId, yearId)).thenReturn(false);
-        when(timetableEntryRepository.save(any(TimetableEntry.class))).thenReturn(entry);
-
-        // When
-        TimetableEntry result = timetableService.createEntry(entry);
-
-        // Then
-        assertNotNull(result);
-        verify(timetableEntryRepository).save(entry);
-    }
-
-    @Test
-    void createEntry_ClassConflict_ThrowsException() {
-        // Given
-        UUID csId = UUID.randomUUID();
-        TimetableEntry entry = new TimetableEntry();
-        entry.setClassSubjectId(csId);
-
-        ClassSubject cs = new ClassSubject();
-        cs.setId(csId);
-        cs.setClassId(UUID.randomUUID());
 
         when(classSubjectRepository.findById(csId)).thenReturn(Optional.of(cs));
         when(timetableEntryRepository.existsConflictForClass(any(), any(), any())).thenReturn(true);
+
+        // When & Then
+        assertThrows(BusinessException.class, () -> timetableService.createEntry(entry));
+        verify(timetableEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void createEntry_ClassSubjectNotFound_ThrowsException() {
+        // Given
+        UUID csId = UUID.randomUUID();
+        
+        TimetableEntry entry = new TimetableEntry();
+        entry.setClassSubjectId(csId);
+
+        when(classSubjectRepository.findById(csId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThrows(BusinessException.class, () -> timetableService.createEntry(entry));

@@ -20,6 +20,12 @@ export interface ApiResponse<T> {
     success: boolean;
 }
 
+export interface AttendanceRecord {
+    enrollmentId: string;
+    justification: string;
+    status: string;
+}
+
 export interface AttendanceRequest {
     date: Date;
     enrollmentId: string;
@@ -29,12 +35,25 @@ export interface AttendanceRequest {
 }
 
 export interface AttendanceResponse {
+    createdAt: Date;
     date: Date;
     enrollmentId: string;
     id: string;
     justification: string;
     period: string;
+    recordedBy: string;
     status: string;
+    updatedAt: Date;
+}
+
+export interface AttendanceSummaryResponse {
+    absentDays: number;
+    attendanceRate: number;
+    excusedDays: number;
+    lateDays: number;
+    presentDays: number;
+    studentId: string;
+    totalDays: number;
 }
 
 export interface AuthResponse {
@@ -42,6 +61,28 @@ export interface AuthResponse {
     expiresIn: number;
     refreshToken: string;
     user: UserData;
+}
+
+export interface BulkAttendanceRequest {
+    classId: string;
+    date: Date;
+    period: string;
+    records: AttendanceRecord[];
+}
+
+export interface BulkGradeItem {
+    comment: string;
+    enrollmentId: string;
+    value: number;
+}
+
+export interface BulkGradeRequest {
+    classSubjectId: string;
+    evaluationDate: Date;
+    evaluationLabel: string;
+    evaluationType: string;
+    grades: BulkGradeItem[];
+    termId: string;
 }
 
 export interface CreatePaymentRequest {
@@ -52,6 +93,13 @@ export interface CreatePaymentRequest {
     paymentMethod: string;
     referenceNumber: string;
     studentId: string;
+}
+
+export interface CreatePromotionBatchRequest {
+    academicYearId: string;
+    classId: string;
+    nextAcademicYearId: string;
+    notes: string;
 }
 
 export interface CreateStudentRequest {
@@ -121,6 +169,36 @@ export interface EnrollmentResponse {
     studentNumber: string;
 }
 
+export interface FeeStructureRequest {
+    academicYearId: string;
+    amount: number;
+    classId: string;
+    dueDate: Date;
+    feeType: FeeType;
+    installmentsAllowed: boolean;
+    label: string;
+    maxInstallments: number;
+}
+
+export interface FeeStructureResponse {
+    academicYearId: string;
+    amount: number;
+    classId: string;
+    createdAt: Date;
+    dueDate: Date;
+    feeType: FeeType;
+    id: string;
+    installmentsAllowed: boolean;
+    label: string;
+    maxInstallments: number;
+    updatedAt: Date;
+}
+
+export interface GenerateReportCardsRequest {
+    classId: string;
+    termId: string;
+}
+
 export interface GradeRequest {
     classSubjectId: string;
     comment: string;
@@ -142,6 +220,7 @@ export interface GradeResponse {
     evaluationType: string;
     id: string;
     termId: string;
+    updatedAt: Date;
     value: number;
 }
 
@@ -192,6 +271,76 @@ export interface PaymentResponse {
     studentName: string;
 }
 
+export interface PromotionBatchResponse {
+    academicYearId: string;
+    classId: string;
+    createdAt: Date;
+    directorComment: string;
+    executedAt: Date;
+    graduatedCount: number;
+    id: string;
+    nextAcademicYearId: string;
+    notes: string;
+    promotedCount: number;
+    repeatedCount: number;
+    status: string;
+    totalProcessed: number;
+    validationErrors: string;
+}
+
+export interface ReportCardCommentsRequest {
+    directorComment: string;
+    teacherComment: string;
+}
+
+export interface ReportCardResponse {
+    classSize: number;
+    createdAt: Date;
+    directorComment: string;
+    enrollmentId: string;
+    generalAverage: number;
+    id: string;
+    pdfUrl: string;
+    publishedAt: Date;
+    rankInClass: number;
+    status: ReportCardStatus;
+    studentName: string;
+    teacherComment: string;
+    termId: string;
+    termName: string;
+}
+
+export interface StudentFeeDiscountRequest {
+    discountAmount: number;
+    discountReason: string;
+}
+
+export interface StudentFeeResponse {
+    amountDue: number;
+    amountPaid: number;
+    createdAt: Date;
+    discountAmount: number;
+    discountReason: string;
+    dueDate: Date;
+    enrollmentId: string;
+    feeLabel: string;
+    feeStructureId: string;
+    id: string;
+    status: FeeStatus;
+}
+
+export interface StudentFeeSummaryResponse {
+    amountRemaining: number;
+    enrollmentId: string;
+    overallStatus: string;
+    paidFeeCount: number;
+    studentName: string;
+    totalDiscount: number;
+    totalDue: number;
+    totalPaid: number;
+    unpaidFeeCount: number;
+}
+
 export interface StudentResponse {
     dateOfBirth: Date;
     firstName: string;
@@ -203,6 +352,33 @@ export interface StudentResponse {
     parentPhone: string;
     photoUrl: string;
     studentNumber: string;
+}
+
+export interface TimeSlotRequest {
+    dayOfWeek: string;
+    endTime: Date;
+    label: string;
+    orderIndex: number;
+    startTime: Date;
+}
+
+export interface TimetableEntryDto {
+    dayOfWeek: string;
+    endTime: Date;
+    isActive: boolean;
+    roomNumber: string;
+    startTime: Date;
+    subjectName: string;
+    teacherName: string;
+}
+
+export interface TimetableEntryRequest {
+    academicYearId: string;
+    classSubjectId: string;
+    isActive: boolean;
+    roomNumber: string;
+    termId: string;
+    timeSlotId: string;
 }
 
 export interface UserData {
@@ -225,4 +401,37 @@ export interface UserResponse {
     lastName: string;
     phone: string;
     role: string;
+}
+
+export interface WeeklyTimetableResponse {
+    classId: string;
+    className: string;
+    entries: TimetableEntryDto[];
+}
+
+export const enum FeeStatus {
+    UNPAID = "UNPAID",
+    PARTIAL = "PARTIAL",
+    PAID = "PAID",
+    OVERDUE = "OVERDUE",
+    WAIVED = "WAIVED",
+    EXEMPTED = "EXEMPTED",
+}
+
+export const enum FeeType {
+    TUITION = "TUITION",
+    REGISTRATION = "REGISTRATION",
+    CANTEEN = "CANTEEN",
+    TRANSPORT = "TRANSPORT",
+    EXAM = "EXAM",
+    ACTIVITY = "ACTIVITY",
+    OTHER = "OTHER",
+}
+
+export const enum ReportCardStatus {
+    DRAFT = "DRAFT",
+    GENERATED = "GENERATED",
+    PUBLISHED = "PUBLISHED",
+    ARCHIVED = "ARCHIVED",
+    CORRECTED = "CORRECTED",
 }

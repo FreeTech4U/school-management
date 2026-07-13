@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -15,4 +16,7 @@ public class AttendanceResponse {
     private String period;
     private String status;
     private String justification;
+    private UUID recordedBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

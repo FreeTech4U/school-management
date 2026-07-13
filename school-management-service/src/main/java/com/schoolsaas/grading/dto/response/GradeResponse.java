@@ -21,4 +21,5 @@ public class GradeResponse {
     private LocalDate evaluationDate;
     private String comment;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

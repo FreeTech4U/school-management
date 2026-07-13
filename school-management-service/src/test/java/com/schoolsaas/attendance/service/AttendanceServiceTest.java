@@ -2,12 +2,13 @@ package com.schoolsaas.attendance.service;
 
 import com.schoolsaas.attendance.entity.Attendance;
 import com.schoolsaas.attendance.repository.AttendanceRepository;
+import com.schoolsaas.common.enums.AttendanceStatus;
+import com.schoolsaas.common.enums.Period;
 import com.schoolsaas.common.exception.BusinessException;
-import com.schoolsaas.communication.service.SmsService;
 import com.schoolsaas.enrollment.entity.Student;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;
-import com.schoolsaas.enrollment.repository.StudentEnrollmentRepository;
 import com.schoolsaas.enrollment.repository.StudentRepository;
+import com.schoolsaas.communication.service.SmsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,10 +28,10 @@ class AttendanceServiceTest {
 
     @Mock
     private AttendanceRepository attendanceRepository;
+
     @Mock
     private StudentRepository studentRepository;
-    @Mock
-    private StudentEnrollmentRepository enrollmentRepository;
+
     @Mock
     private SmsService smsService;
 
@@ -38,15 +39,21 @@ class AttendanceServiceTest {
     private AttendanceService attendanceService;
 
     @Test
-    void recordAttendance_Present_Success() {
+    void recordAttendance_Success() {
         // Given
-        Attendance attendance = new Attendance();
-        attendance.setEnrollmentId(UUID.randomUUID());
-        attendance.setDate(LocalDate.now());
-        attendance.setPeriod("MORNING");
-        attendance.setStatus("PRESENT");
+        UUID enrollmentId = UUID.randomUUID();
+        StudentEnrollment enrollment = StudentEnrollment.builder().build();
+        enrollment.setId(enrollmentId);
 
-        when(attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(any(), any(), any())).thenReturn(false);
+        Attendance attendance = Attendance.builder()
+                .enrollment(enrollment)
+                .date(LocalDate.now())
+                .period(Period.MORNING)
+                .status(AttendanceStatus.PRESENT)
+                .build();
+
+        when(attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(enrollmentId, LocalDate.now(), Period.MORNING))
+                .thenReturn(false);
         when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
 
         // When
@@ -54,54 +61,69 @@ class AttendanceServiceTest {
 
         // Then
         assertNotNull(result);
+        assertEquals(AttendanceStatus.PRESENT, result.getStatus());
         verify(attendanceRepository).save(attendance);
-        verifyNoInteractions(smsService);
+        verify(smsService, never()).sendTemplatedSms(any(), any(), any(), any());
     }
 
     @Test
-    void recordAttendance_Absent_SendsSms() {
+    void recordAttendance_WithAbsent_ShouldNotifyParent() {
         // Given
         UUID enrollmentId = UUID.randomUUID();
         UUID studentId = UUID.randomUUID();
-        Attendance attendance = new Attendance();
-        attendance.setEnrollmentId(enrollmentId);
-        attendance.setDate(LocalDate.now());
-        attendance.setPeriod("MORNING");
-        attendance.setStatus("ABSENT");
-
-        StudentEnrollment enrollment = new StudentEnrollment();
+        
+        StudentEnrollment enrollment = StudentEnrollment.builder().build();
         enrollment.setId(enrollmentId);
         enrollment.setStudentId(studentId);
 
-        Student student = new Student();
+        Student student = Student.builder()
+                .parentPhone("+1234567890")
+                .parentName("Parent Name")
+                .firstName("John")
+                .lastName("Doe")
+                .build();
         student.setId(studentId);
-        student.setFirstName("John");
-        student.setLastName("Doe");
-        student.setParentPhone("+224622112233");
 
-        when(attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(any(), any(), any())).thenReturn(false);
+        Attendance attendance = Attendance.builder()
+                .enrollment(enrollment)
+                .date(LocalDate.now())
+                .period(Period.AFTERNOON)
+                .status(AttendanceStatus.ABSENT)
+                .build();
+
+        when(attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(enrollmentId, LocalDate.now(), Period.AFTERNOON))
+                .thenReturn(false);
         when(attendanceRepository.save(any(Attendance.class))).thenReturn(attendance);
-        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
 
         // When
-        attendanceService.recordAttendance(attendance);
+        Attendance result = attendanceService.recordAttendance(attendance);
 
         // Then
-        verify(smsService).sendTemplatedSms(eq(studentId), eq("+224622112233"), eq("absence_notification"), anyMap());
+        assertNotNull(result);
+        assertEquals(AttendanceStatus.ABSENT, result.getStatus());
+        verify(smsService).sendTemplatedSms(eq(studentId), eq("+1234567890"), eq("absence_notification"), any());
     }
 
     @Test
-    void recordAttendance_Duplicate_ThrowsException() {
+    void recordAttendance_AlreadyRecorded_ThrowsException() {
         // Given
-        Attendance attendance = new Attendance();
-        attendance.setEnrollmentId(UUID.randomUUID());
-        attendance.setDate(LocalDate.now());
-        attendance.setPeriod("MORNING");
+        UUID enrollmentId = UUID.randomUUID();
+        StudentEnrollment enrollment = StudentEnrollment.builder().build();
+        enrollment.setId(enrollmentId);
 
-        when(attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(any(), any(), any())).thenReturn(true);
+        Attendance attendance = Attendance.builder()
+                .enrollment(enrollment)
+                .date(LocalDate.now())
+                .period(Period.FULL_DAY)
+                .status(AttendanceStatus.PRESENT)
+                .build();
+
+        when(attendanceRepository.existsByEnrollmentIdAndDateAndPeriod(enrollmentId, LocalDate.now(), Period.FULL_DAY))
+                .thenReturn(true);
 
         // When & Then
         assertThrows(BusinessException.class, () -> attendanceService.recordAttendance(attendance));
+        verify(attendanceRepository, never()).save(any());
     }
 }
