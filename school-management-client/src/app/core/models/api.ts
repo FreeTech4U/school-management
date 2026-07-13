@@ -108,7 +108,7 @@ export interface CreateStudentRequest {
     birthCountry: string;
     dateOfBirth: Date;
     firstName: string;
-    gender: string;
+    gender: Gender;
     lastName: string;
     medicalNotes: string;
     parentName: string;
@@ -126,7 +126,7 @@ export interface CreateUserRequest {
     password: string;
     phone: string;
     qualification: string;
-    role: string;
+    role: Role;
     specialty: string;
 }
 
@@ -283,7 +283,7 @@ export interface PromotionBatchResponse {
     notes: string;
     promotedCount: number;
     repeatedCount: number;
-    status: string;
+    status: PromotionBatchStatus;
     totalProcessed: number;
     validationErrors: string;
 }
@@ -344,7 +344,7 @@ export interface StudentFeeSummaryResponse {
 export interface StudentResponse {
     dateOfBirth: Date;
     firstName: string;
-    gender: string;
+    gender: Gender;
     id: string;
     isActive: boolean;
     lastName: string;
@@ -355,7 +355,7 @@ export interface StudentResponse {
 }
 
 export interface TimeSlotRequest {
-    dayOfWeek: string;
+    dayOfWeek: DayOfWeek;
     endTime: Date;
     label: string;
     orderIndex: number;
@@ -409,13 +409,21 @@ export interface WeeklyTimetableResponse {
     entries: TimetableEntryDto[];
 }
 
+export const enum DayOfWeek {
+    MONDAY = "MONDAY",
+    TUESDAY = "TUESDAY",
+    WEDNESDAY = "WEDNESDAY",
+    THURSDAY = "THURSDAY",
+    FRIDAY = "FRIDAY",
+    SATURDAY = "SATURDAY",
+}
+
 export const enum FeeStatus {
     UNPAID = "UNPAID",
     PARTIAL = "PARTIAL",
     PAID = "PAID",
     OVERDUE = "OVERDUE",
     WAIVED = "WAIVED",
-    EXEMPTED = "EXEMPTED",
 }
 
 export const enum FeeType {
@@ -428,10 +436,27 @@ export const enum FeeType {
     OTHER = "OTHER",
 }
 
+export const enum Gender {
+    MALE = "MALE",
+    FEMALE = "FEMALE",
+}
+
+export const enum PromotionBatchStatus {
+    CREATED = "CREATED",
+    VALIDATED = "VALIDATED",
+    EXECUTED = "EXECUTED",
+    CANCELLED = "CANCELLED",
+}
+
 export const enum ReportCardStatus {
     DRAFT = "DRAFT",
-    GENERATED = "GENERATED",
     PUBLISHED = "PUBLISHED",
-    ARCHIVED = "ARCHIVED",
-    CORRECTED = "CORRECTED",
+    SENT_TO_PARENT = "SENT_TO_PARENT",
+}
+
+export const enum Role {
+    DIRECTOR = "DIRECTOR",
+    TEACHER = "TEACHER",
+    ACCOUNTANT = "ACCOUNTANT",
+    PARENT = "PARENT",
 }
