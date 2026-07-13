@@ -12,13 +12,13 @@ CREATE TYPE evaluation_type AS ENUM ('DEVOIR', 'COMPOSITION', 'ORAL', 'TP');
 ALTER TABLE grades 
     ALTER COLUMN evaluation_type TYPE evaluation_type 
     USING CASE 
-        WHEN evaluation_type_old::text = 'EXAM' THEN 'DEVOIR'::evaluation_type
-        WHEN evaluation_type_old::text = 'CONTINUOUS_ASSESSMENT' THEN 'COMPOSITION'::evaluation_type
-        WHEN evaluation_type_old::text = 'ASSIGNMENT' THEN 'DEVOIR'::evaluation_type
-        WHEN evaluation_type_old::text = 'PROJECT' THEN 'TP'::evaluation_type
-        WHEN evaluation_type_old::text = 'PARTICIPATION' THEN 'ORAL'::evaluation_type
-        WHEN evaluation_type_old::text = 'PRACTICAL' THEN 'TP'::evaluation_type
-        WHEN evaluation_type_old::text = 'QUIZ' THEN 'COMPOSITION'::evaluation_type
+        WHEN evaluation_type::text = 'EXAM' THEN 'DEVOIR'::evaluation_type
+        WHEN evaluation_type::text = 'CONTINUOUS_ASSESSMENT' THEN 'COMPOSITION'::evaluation_type
+        WHEN evaluation_type::text = 'ASSIGNMENT' THEN 'DEVOIR'::evaluation_type
+        WHEN evaluation_type::text = 'PROJECT' THEN 'TP'::evaluation_type
+        WHEN evaluation_type::text = 'PARTICIPATION' THEN 'ORAL'::evaluation_type
+        WHEN evaluation_type::text = 'PRACTICAL' THEN 'TP'::evaluation_type
+        WHEN evaluation_type::text = 'QUIZ' THEN 'COMPOSITION'::evaluation_type
         ELSE 'DEVOIR'::evaluation_type
     END;
 

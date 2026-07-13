@@ -3,6 +3,7 @@ package com.schoolsaas.timetable.repository;
 import com.schoolsaas.timetable.entity.TimetableEntry;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,14 +15,14 @@ public interface TimetableEntryRepository extends JpaRepository<TimetableEntry, 
     List<TimetableEntry> findByClassAndYear(UUID classId, UUID yearId);
 
     @Query("SELECT e FROM TimetableEntry e JOIN ClassSubject cs ON e.classSubjectId = cs.id " +
-           "WHERE cs.teacherId = :teacherId AND e.academicYearId = :yearId AND e.isActive = true")
-    List<TimetableEntry> findByTeacherAndYear(UUID teacherId, UUID yearId);
+           "WHERE cs.teacher.id = :teacherId AND e.academicYearId = :yearId AND e.isActive = true")
+    List<TimetableEntry> findByTeacherAndYear(@Param("teacherId") UUID teacherId, @Param("yearId") UUID yearId);
     
     @Query("SELECT COUNT(e) > 0 FROM TimetableEntry e JOIN ClassSubject cs ON e.classSubjectId = cs.id " +
            "WHERE cs.classId = :classId AND e.timeSlotId = :timeSlotId AND e.academicYearId = :yearId AND e.isActive = true")
-    boolean existsConflictForClass(UUID classId, UUID timeSlotId, UUID yearId);
+    boolean existsConflictForClass(@Param("classId") UUID classId, @Param("timeSlotId") UUID timeSlotId, @Param("yearId") UUID yearId);
 
     @Query("SELECT COUNT(e) > 0 FROM TimetableEntry e JOIN ClassSubject cs ON e.classSubjectId = cs.id " +
-           "WHERE cs.teacherId = :teacherId AND e.timeSlotId = :timeSlotId AND e.academicYearId = :yearId AND e.isActive = true")
-    boolean existsConflictForTeacher(UUID teacherId, UUID timeSlotId, UUID yearId);
+           "WHERE cs.teacher.id = :teacherId AND e.timeSlotId = :timeSlotId AND e.academicYearId = :yearId AND e.isActive = true")
+    boolean existsConflictForTeacher(@Param("teacherId") UUID teacherId, @Param("timeSlotId") UUID timeSlotId, @Param("yearId") UUID yearId);
 }

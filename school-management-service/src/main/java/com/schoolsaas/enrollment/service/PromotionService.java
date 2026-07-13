@@ -1,6 +1,7 @@
 package com.schoolsaas.enrollment.service;
 
 import com.schoolsaas.academic.entity.Term;
+import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.SchoolClassRepository;
 import com.schoolsaas.academic.repository.TermRepository;
 import com.schoolsaas.common.enums.EnrollmentStatus;
@@ -35,6 +36,7 @@ public class PromotionService {
 
     private final PromotionBatchRepository promotionBatchRepository;
     private final StudentEnrollmentRepository enrollmentRepository;
+    private final AcademicYearRepository academicYearRepository;
     private final TermRepository termRepository;
     private final SchoolClassRepository classRepository;
     private final ReportCardRepository reportCardRepository;
@@ -64,11 +66,11 @@ public class PromotionService {
         }
 
         // Verify academic years exist
-        termRepository.findById(academicYearId)
+        academicYearRepository.findById(academicYearId)
                 .orElseThrow(() -> BusinessException.notFound("ACADEMIC_YEAR_NOT_FOUND", 
                         "Année scolaire courante introuvable"));
         
-        termRepository.findById(nextAcademicYearId)
+        academicYearRepository.findById(nextAcademicYearId)
                 .orElseThrow(() -> BusinessException.notFound("ACADEMIC_YEAR_NOT_FOUND", 
                         "Année scolaire suivante introuvable"));
 
