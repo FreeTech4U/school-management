@@ -34,6 +34,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class SchoolSubscription extends BaseEntity {
 
     /** INTRA-domaine : @ManyToOne. */

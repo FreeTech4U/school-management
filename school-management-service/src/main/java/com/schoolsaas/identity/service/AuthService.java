@@ -1,6 +1,5 @@
 package com.schoolsaas.identity.service;
 
-import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.config.multitenancy.TenantContext;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j

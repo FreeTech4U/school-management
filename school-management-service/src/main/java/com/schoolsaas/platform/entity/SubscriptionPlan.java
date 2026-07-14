@@ -39,6 +39,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class SubscriptionPlan extends BaseEntity {
 
     /** starter · standard · premium */

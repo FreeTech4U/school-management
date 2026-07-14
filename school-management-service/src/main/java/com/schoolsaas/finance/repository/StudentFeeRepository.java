@@ -17,8 +17,9 @@ public interface StudentFeeRepository extends JpaRepository<StudentFee, UUID> {
     @Modifying
     @Query("""
     UPDATE StudentFee sf
-    SET    sf.status = 'OVERDUE'
-    WHERE  sf.status IN ('UNPAID', 'PARTIAL')
+    SET    sf.status = com.schoolsaas.common.enums.FeeStatus.OVERDUE
+    WHERE  sf.status IN (com.schoolsaas.common.enums.FeeStatus.UNPAID,
+                          com.schoolsaas.common.enums.FeeStatus.PARTIAL)
       AND  sf.dueDate IS NOT NULL
       AND  sf.dueDate < CURRENT_DATE
     """)
@@ -28,7 +29,9 @@ public interface StudentFeeRepository extends JpaRepository<StudentFee, UUID> {
     @Query("""
     SELECT sf FROM StudentFee sf
     JOIN FETCH sf.feeStructure fs
-    WHERE sf.status IN ('UNPAID', 'PARTIAL', 'OVERDUE')
+    WHERE sf.status IN (com.schoolsaas.common.enums.FeeStatus.UNPAID,
+                        com.schoolsaas.common.enums.FeeStatus.PARTIAL,
+                        com.schoolsaas.common.enums.FeeStatus.OVERDUE)
       AND (sf.lastReminderSentAt IS NULL OR sf.lastReminderSentAt < :cutoff)
     ORDER BY sf.dueDate ASC NULLS LAST
     """)

@@ -4,6 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TenantContext {
+
+    private TenantContext() {
+        /* This utility class should not be instantiated */
+    }
+
     private static final ThreadLocal<String> CURRENT_TENANT = new ThreadLocal<>();
 
     public static void set(String tenantId) {
