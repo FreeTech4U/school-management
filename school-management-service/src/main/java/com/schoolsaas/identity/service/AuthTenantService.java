@@ -1,6 +1,7 @@
 package com.schoolsaas.identity.service;
 
 import com.schoolsaas.common.exception.BusinessException;
+import com.schoolsaas.config.multitenancy.TenantContext;
 import com.schoolsaas.config.security.AuthenticatedUser;
 import com.schoolsaas.config.security.JwtService;
 import com.schoolsaas.identity.dto.request.LoginRequest;
@@ -12,6 +13,7 @@ import com.schoolsaas.identity.repository.UserRoleAssignmentRepository;
 import com.schoolsaas.platform.entity.School;
 import com.schoolsaas.platform.service.RoleCatalogService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,8 @@ import java.util.UUID;
  * jamais en interne : @Transactional ne s'applique que sur les appels
  * externes, qui passent par le proxy Spring.
  */
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthTenantService {
@@ -59,6 +63,8 @@ public class AuthTenantService {
 
     @Transactional
     public AuthResponse authenticate(LoginRequest request, School school, boolean fallbackOccurred) {
+
+        log.info("[DIAG] TenantContext au début de authenticate() = {}", TenantContext.get());
 
         User user = userRepository.findByEmailAndIsActiveTrue(request.getEmail())
                 .orElseThrow(() -> BusinessException.unauthorized(

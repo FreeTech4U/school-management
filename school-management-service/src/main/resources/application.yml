@@ -28,7 +28,7 @@ spring:
         # multi_tenant_connection_provider. Hibernate instancierait les classes
         # lui-même (sans Spring) et le DataSource injecté serait null.
         # Spring Boot 3 détecte automatiquement les beans @Component.
-        multiTenancy: SCHEMA
+     #   multiTenancy: SCHEMA
         jdbc:
           batch_size: 50
           time_zone: UTC
