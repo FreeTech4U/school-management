@@ -45,6 +45,54 @@ VALUES (
     ON CONFLICT (slug) DO NOTHING;
 
 
+-- =============================================================================
+-- 7. DONNÉES INITIALES — Catalogue tarifaire (GNF)
+--
+-- Référence de change : 1 EUR ≈ 9 500 GNF
+--
+--   Starter  :  45 000 GNF/mois  (≈  4,7 €)  →   450 000 GNF/an  (2 mois offerts)
+--   Standard : 120 000 GNF/mois  (≈ 12,6 €)  → 1 200 000 GNF/an  (2 mois offerts)
+--   Premium  : 280 000 GNF/mois  (≈ 29,5 €)  → 2 800 000 GNF/an  (2 mois offerts)
+--
+-- La remise annuelle (2 mois offerts) est l'incitation à l'engagement : elle
+-- sécurise la trésorerie et réduit mécaniquement le taux de résiliation.
+-- =============================================================================
+
+INSERT INTO subscription_plans
+(code, name, description, price_monthly, price_yearly,
+ max_students, sms_included, features)
+VALUES
+    (
+        'starter',
+        'Starter',
+        'Pour les petites écoles jusqu''à 200 élèves',
+        45000.00,
+        450000.00,          -- 10 mois payés au lieu de 12
+        200,
+        200,
+        '{"timetable": false, "advanced_reports": false, "parent_app": false}'::jsonb
+    ),
+    (
+        'standard',
+        'Standard',
+        'Pour les écoles de 200 à 600 élèves',
+        120000.00,
+        1200000.00,
+        600,
+        600,
+        '{"timetable": true, "advanced_reports": true, "parent_app": false}'::jsonb
+    ),
+    (
+        'premium',
+        'Premium',
+        'Pour les grandes écoles et groupes scolaires — élèves illimités',
+        280000.00,
+        2800000.00,
+        NULL,               -- illimité
+        2000,
+        '{"timetable": true, "advanced_reports": true, "parent_app": true}'::jsonb
+    );
+
 -- ── L'abonnement ─────────────────────────────────────────────────────────────
 -- L'index UNIQUE partiel uq_school_active_subscription interdit deux
 -- abonnements ACTIVE pour la même école : le ON CONFLICT le prend en compte.
@@ -80,3 +128,14 @@ WHERE  s.slug = 'ste-marie-dixinn'
     WHERE  ss.school_id = s.id
       AND  ss.status    = 'ACTIVE'
 );
+
+-- ── Rôles ────────────────────────────────────────────────────────────────────
+-- Reprend exactement les 4 valeurs de l'ancien enum Java Role, désormais
+-- supprimé. D'autres rôles pourront être ajoutés plus tard via l'API
+-- d'administration, sans toucher à cette migration ni à aucun schema tenant.
+INSERT INTO roles (code, label) VALUES
+    ('DIRECTOR',   'Directeur'),
+    ('TEACHER',    'Enseignant'),
+    ('ACCOUNTANT', 'Comptable'),
+    ('PARENT',     'Parent');
+

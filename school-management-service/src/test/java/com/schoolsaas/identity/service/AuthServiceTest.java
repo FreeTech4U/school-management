@@ -1,9 +1,7 @@
 package com.schoolsaas.identity.service;
 
-import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.exception.BusinessException;
-import com.schoolsaas.config.security.AuthenticatedUser;
 import com.schoolsaas.config.security.JwtService;
 import com.schoolsaas.identity.dto.request.LoginRequest;
 import com.schoolsaas.identity.dto.response.AuthResponse;
@@ -19,9 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +54,7 @@ class AuthServiceTest {
         User user = new User();
         user.setEmail("user@test.com");
         user.setPasswordHash("hashed_password");
-        user.setRole(Role.DIRECTOR);
+     //   user.setRole(Role.DIRECTOR);
         user.setFirstName("John");
         user.setLastName("Doe");
 

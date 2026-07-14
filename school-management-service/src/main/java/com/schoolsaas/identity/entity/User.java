@@ -1,19 +1,25 @@
 package com.schoolsaas.identity.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
-import com.schoolsaas.common.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 /**
  * Utilisateur de l'application (personnel de l'école).
  *
- * Un utilisateur appartient toujours à un tenant : il vit dans le schema
- * PostgreSQL de son école. L'isolation est assurée par Hibernate via le
- * TenantContext — aucune colonne school_id n'est nécessaire.
+ * CORRECTION D'ARCHITECTURE — cette entité ne porte plus AUCUNE référence à
+ * Role, ni directe (ancien enum Java) ni via association JPA (@ManyToMany
+ * tenté puis retiré). Role vit dans platform/ (schema public), un domaine
+ * différent d'identity/ (schema tenant) : la frontière se traverse par UUID,
+ * jamais par relation JPA — voir UserRoleAssignment pour le détail complet
+ * de ce raisonnement.
+ *
+ * Pour connaître les rôles d'un utilisateur : passer par
+ * UserRoleAssignmentRepository.findRoleIdsByUserId(), puis résoudre les codes
+ * via platform/RoleCatalogService si nécessaire (fait par AuthTenantService
+ * à la connexion, par exemple).
  */
 @Entity
 @Table(name = "users")
@@ -41,11 +47,6 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    /** DIRECTOR · TEACHER · ACCOUNTANT · PARENT */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private Role role;
-
     @Column(name = "avatar_url")
     private String avatarUrl;
 
@@ -54,11 +55,9 @@ public class User extends BaseEntity {
     @Builder.Default
     private Boolean isActive = true;
 
-    /** CORRECTION : Instant (colonne TIMESTAMPTZ), et non LocalDateTime. */
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
-    /** Nom complet, utilisé dans les DTO et les SMS. */
     @Transient
     public String getFullName() {
         return lastName + " " + firstName;

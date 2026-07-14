@@ -1,6 +1,5 @@
 package com.schoolsaas.identity.mapper;
 
-import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.identity.dto.response.UserResponse;
 import com.schoolsaas.identity.entity.User;
 import org.junit.jupiter.api.Test;

@@ -43,6 +43,15 @@
 -- com.schoolsaas.common.enums. Toute valeur ajoutée d'un côté DOIT l'être de
 -- l'autre.
 --
+-- EXCEPTION — user_roles.role_id.
+--   Contrairement aux autres énumérations, le vocabulaire des rôles n'est
+--   PAS fixe : il doit pouvoir être étendu à l'exécution via une future API
+--   d'administration (ajouter un rôle "INFIRMIER", par exemple, sans
+--   migration). role_id est donc une clé étrangère INTER-SCHEMA vers une
+--   vraie table (public.roles), et non un VARCHAR + CHECK. Voir le
+--   commentaire sur la table user_roles, section 1, et
+--   V1__init_public_schema.sql section 1 (RÔLES).
+--
 -- -----------------------------------------------------------------------------
 -- CONVENTION DE TYPAGE TEMPOREL
 -- -----------------------------------------------------------------------------
@@ -82,7 +91,7 @@ CREATE OR REPLACE FUNCTION fn_update_updated_at()
     RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -92,30 +101,53 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- Utilisateurs de l'application (personnel de l'école).
--- Enum Java associé : Role
+--
+-- CORRECTION — le rôle n'est plus une colonne unique sur users.
+--   Une même personne peut désormais cumuler plusieurs rôles dans la MÊME
+--   école (ex : comptable ET enseignant dans une petite structure), ou être
+--   DIRECTOR d'une école et TEACHER d'une autre. Le rôle devient donc une
+--   relation PLUSIEURS-À-PLUSIEURS avec users, portée par la table user_roles
+--   ci-dessous — et non par une table de référence "roles" séparée : le
+--   projet évite délibérément les tables de référence pour les énumérations
+--   fixes (même logique que fee_type ou payment_method : VARCHAR + CHECK,
+--   jamais de table de correspondance avec clé de substitution).
 CREATE TABLE users (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    first_name    VARCHAR(100) NOT NULL,
-    last_name     VARCHAR(100) NOT NULL,
-    email         VARCHAR(255) UNIQUE NOT NULL,
-    phone         VARCHAR(20),
-    password_hash VARCHAR(255) NOT NULL,          -- BCrypt, force 12
-    role          VARCHAR(20)  NOT NULL,
-    avatar_url    VARCHAR(255),
-    is_active     BOOLEAN      NOT NULL DEFAULT TRUE,   -- désactivation = soft delete
-    last_login_at TIMESTAMPTZ,
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                       id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                       first_name    VARCHAR(100) NOT NULL,
+                       last_name     VARCHAR(100) NOT NULL,
+                       email         VARCHAR(255) UNIQUE NOT NULL,
+                       phone         VARCHAR(20),
+                       password_hash VARCHAR(255) NOT NULL,          -- BCrypt, force 12
+                       avatar_url    VARCHAR(255),
+                       is_active     BOOLEAN      NOT NULL DEFAULT TRUE,   -- désactivation = soft delete
+                       last_login_at TIMESTAMPTZ,
+                       created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                       updated_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
-    -- Enum Java : Role
-    --   DIRECTOR   : accès total (seul à pouvoir supprimer, publier les
-    --                bulletins, ouvrir/fermer la saisie des notes)
-    --   TEACHER    : notes et présences, uniquement sur ses propres matières
-    --   ACCOUNTANT : élèves, frais, paiements
-    --   PARENT     : consultation seule (application parent, phase 3)
-    CONSTRAINT chk_user_role CHECK (
-        role IN ('DIRECTOR', 'TEACHER', 'ACCOUNTANT', 'PARENT')
-    )
+-- Rôles attribués à un utilisateur, DANS ce tenant (F-02, F-03).
+--
+-- CORRECTION — clé primaire composite (user_id, role_id) remplacée par un id
+-- surrogate + contrainte UNIQUE, pour rester cohérent avec TOUTES les autres
+-- tables de jointure du schéma (class_subjects, payment_allocations...), qui
+-- suivent systématiquement cette convention plutôt qu'une PK composite.
+--
+-- role_id (FK inter-schema vers public.roles) : le vocabulaire des rôles
+-- n'est plus figé au moment de la migration, il vit dans une table unique
+-- partagée par toutes les écoles, modifiable via une future API
+-- d'administration sans toucher à aucune migration tenant.
+CREATE TABLE user_roles (
+                            id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+
+    -- Référence INTER-SCHEMA : la table roles vit une seule fois dans public,
+    -- jamais dupliquée dans chaque tenant (voir V1__init_public_schema.sql).
+                            role_id UUID NOT NULL REFERENCES public.roles (id),
+
+                            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                            CONSTRAINT uq_user_role UNIQUE (user_id, role_id)
 );
 
 -- Informations complémentaires propres aux enseignants.
@@ -123,14 +155,14 @@ CREATE TABLE users (
 -- est créé avec le rôle TEACHER (F-03).
 -- La PK est aussi la FK : relation 1-1 stricte avec users.
 CREATE TABLE teachers (
-    id              UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
-    employee_number VARCHAR(50) UNIQUE,
-    hire_date       DATE,
-    specialty       VARCHAR(100),
-    qualification   VARCHAR(255),
-    bio             TEXT,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                          id              UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+                          employee_number VARCHAR(50) UNIQUE,
+                          hire_date       DATE,
+                          specialty       VARCHAR(100),
+                          qualification   VARCHAR(255),
+                          bio             TEXT,
+                          created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -141,21 +173,21 @@ CREATE TABLE teachers (
 -- Année scolaire. Une seule peut être courante à la fois.
 -- Enum Java associé : YearStatus
 CREATE TABLE academic_years (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    label      VARCHAR(50) UNIQUE NOT NULL,        -- ex : "2024-2025"
-    start_date DATE        NOT NULL,
-    end_date   DATE        NOT NULL,
-    is_current BOOLEAN     NOT NULL DEFAULT FALSE,
-    status     VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                label      VARCHAR(50) UNIQUE NOT NULL,        -- ex : "2024-2025"
+                                start_date DATE        NOT NULL,
+                                end_date   DATE        NOT NULL,
+                                is_current BOOLEAN     NOT NULL DEFAULT FALSE,
+                                status     VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+                                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : YearStatus
     --   ACTIVE : en cours
     --   CLOSED : clôturée — l'année n'est plus modifiable, sa clôture déclenche
     --            la validation des promotions en attente (F-19)
-    CONSTRAINT chk_year_status CHECK (status IN ('ACTIVE', 'CLOSED')),
-    CONSTRAINT chk_year_dates  CHECK (end_date > start_date)
+                                CONSTRAINT chk_year_status CHECK (status IN ('ACTIVE', 'CLOSED')),
+                                CONSTRAINT chk_year_dates  CHECK (end_date > start_date)
 );
 
 -- Une seule année scolaire courante (F-04).
@@ -168,22 +200,22 @@ CREATE UNIQUE INDEX uq_academic_year_current
 
 -- Trimestre. Le drapeau grades_entry_open contrôle la saisie des notes.
 CREATE TABLE terms (
-    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    academic_year_id  UUID         NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
-    name              VARCHAR(100) NOT NULL,       -- ex : "1er Trimestre"
-    term_number       SMALLINT     NOT NULL,
-    start_date        DATE         NOT NULL,
-    end_date          DATE         NOT NULL,
-    is_current        BOOLEAN      NOT NULL DEFAULT FALSE,
+                       id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                       academic_year_id  UUID         NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
+                       name              VARCHAR(100) NOT NULL,       -- ex : "1er Trimestre"
+                       term_number       SMALLINT     NOT NULL,
+                       start_date        DATE         NOT NULL,
+                       end_date          DATE         NOT NULL,
+                       is_current        BOOLEAN      NOT NULL DEFAULT FALSE,
     -- Seul le directeur ouvre et ferme la saisie. Un enseignant ne peut saisir
     -- une note que si ce drapeau vaut TRUE (F-05, code erreur GRADES_ENTRY_CLOSED).
-    grades_entry_open BOOLEAN      NOT NULL DEFAULT FALSE,
-    created_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                       grades_entry_open BOOLEAN      NOT NULL DEFAULT FALSE,
+                       created_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                       updated_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT uq_term_number_per_year UNIQUE (academic_year_id, term_number),
-    CONSTRAINT chk_term_number         CHECK (term_number BETWEEN 1 AND 4),
-    CONSTRAINT chk_term_dates          CHECK (end_date > start_date)
+                       CONSTRAINT uq_term_number_per_year UNIQUE (academic_year_id, term_number),
+                       CONSTRAINT chk_term_number         CHECK (term_number BETWEEN 1 AND 4),
+                       CONSTRAINT chk_term_dates          CHECK (end_date > start_date)
 );
 
 -- Un seul trimestre courant PAR ANNÉE.
@@ -195,64 +227,64 @@ CREATE UNIQUE INDEX uq_term_current_per_year
 -- Niveaux du cursus (Primaire, Collège, Lycée).
 -- order_index définit l'ordre de progression, utilisé par la promotion (F-19).
 CREATE TABLE levels (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name        VARCHAR(100) UNIQUE NOT NULL,
-    order_index SMALLINT     UNIQUE NOT NULL,
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        name        VARCHAR(100) UNIQUE NOT NULL,
+                        order_index SMALLINT     UNIQUE NOT NULL,
+                        created_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 
 -- Classe. Entité Java : SchoolClass — « Class » est un mot réservé Java,
 -- d'où l'annotation @Table(name = "classes") côté entité.
 CREATE TABLE classes (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    academic_year_id UUID         NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
-    level_id         UUID         NOT NULL REFERENCES levels (id),
-    name             VARCHAR(100) NOT NULL,        -- ex : "6ème A"
-    option           VARCHAR(100),                 -- Scientifique, Littéraire...
-    capacity         SMALLINT,
-    room_number      VARCHAR(20),
-    created_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                         id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                         academic_year_id UUID         NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
+                         level_id         UUID         NOT NULL REFERENCES levels (id),
+                         name             VARCHAR(100) NOT NULL,        -- ex : "6ème A"
+                         option           VARCHAR(100),                 -- Scientifique, Littéraire...
+                         capacity         SMALLINT,
+                         room_number      VARCHAR(20),
+                         created_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                         updated_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT uq_class_name_per_year UNIQUE (academic_year_id, name),
-    CONSTRAINT chk_class_capacity     CHECK (capacity IS NULL OR capacity > 0)
+                         CONSTRAINT uq_class_name_per_year UNIQUE (academic_year_id, name),
+                         CONSTRAINT chk_class_capacity     CHECK (capacity IS NULL OR capacity > 0)
 );
 
 
 -- Matières enseignées dans l'établissement.
 CREATE TABLE subjects (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name       VARCHAR(100) UNIQUE NOT NULL,
-    code       VARCHAR(20)  UNIQUE,                -- ex : "MATH"
-    color      VARCHAR(7),                         -- #RRGGBB, pour l'emploi du temps
-    is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                          name       VARCHAR(100) UNIQUE NOT NULL,
+                          code       VARCHAR(20)  UNIQUE,                -- ex : "MATH"
+                          color      VARCHAR(7),                         -- #RRGGBB, pour l'emploi du temps
+                          is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
+                          created_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT chk_subject_color CHECK (color IS NULL OR color ~ '^#[0-9A-Fa-f]{6}$')
-);
+                          CONSTRAINT chk_subject_color CHECK (color IS NULL OR color ~ '^#[0-9A-Fa-f]{6}$')
+    );
 
 
 -- Affectation matière ↔ classe ↔ enseignant.
 -- Le coefficient est utilisé dans le calcul de la moyenne générale (F-16) :
 --   moyenne = Σ(moyenne_matière × coefficient) / Σ(coefficients)
 CREATE TABLE class_subjects (
-    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    class_id     UUID        NOT NULL REFERENCES classes (id)  ON DELETE CASCADE,
-    subject_id   UUID        NOT NULL REFERENCES subjects (id),
+                                id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                class_id     UUID        NOT NULL REFERENCES classes (id)  ON DELETE CASCADE,
+                                subject_id   UUID        NOT NULL REFERENCES subjects (id),
     -- Nullable : une matière peut être créée avant qu'un enseignant y soit affecté.
     -- ON DELETE SET NULL : désactiver un enseignant ne supprime pas la matière.
-    teacher_id   UUID        REFERENCES users (id) ON DELETE SET NULL,
-    coefficient  SMALLINT    NOT NULL DEFAULT 1,
-    weekly_hours SMALLINT,
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                teacher_id   UUID        REFERENCES users (id) ON DELETE SET NULL,
+                                coefficient  SMALLINT    NOT NULL DEFAULT 1,
+                                weekly_hours SMALLINT,
+                                created_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                updated_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT uq_class_subject UNIQUE (class_id, subject_id),
-    CONSTRAINT chk_coefficient  CHECK (coefficient BETWEEN 1 AND 10),
-    CONSTRAINT chk_weekly_hours CHECK (weekly_hours IS NULL OR weekly_hours > 0)
+                                CONSTRAINT uq_class_subject UNIQUE (class_id, subject_id),
+                                CONSTRAINT chk_coefficient  CHECK (coefficient BETWEEN 1 AND 10),
+                                CONSTRAINT chk_weekly_hours CHECK (weekly_hours IS NULL OR weekly_hours > 0)
 );
 
 
@@ -279,27 +311,27 @@ CREATE TABLE class_subjects (
 --
 -- Pour connaître le parcours : requêter enrollments, seule source de vérité.
 CREATE TABLE students (
-    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_number VARCHAR(20) UNIQUE,             -- EL-YYYY-NNNN, généré par trigger
-    first_name     VARCHAR(100) NOT NULL,
-    last_name      VARCHAR(100) NOT NULL,
+                          id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                          student_number VARCHAR(20) UNIQUE,             -- EL-YYYY-NNNN, généré par trigger
+                          first_name     VARCHAR(100) NOT NULL,
+                          last_name      VARCHAR(100) NOT NULL,
     -- Nullable : en Guinée, une inscription se fait couramment sans que la
     -- famille dispose de tous les documents. Rendre ces champs obligatoires
     -- forcerait la saisie de données fausses par les comptables.
-    date_of_birth  DATE,
-    gender         CHAR(1),
-    birth_city     VARCHAR(100),
-    birth_country  VARCHAR(3)   DEFAULT 'GN',
-    photo_url      VARCHAR(255),
-    address        TEXT,
-    parent_name    VARCHAR(255),
-    parent_phone   VARCHAR(20),                    -- format international +224XXXXXXXXX
-    medical_notes  TEXT,
-    is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          date_of_birth  DATE,
+                          gender         CHAR(1),
+                          birth_city     VARCHAR(100),
+                          birth_country  VARCHAR(3)   DEFAULT 'GN',
+                          photo_url      VARCHAR(255),
+                          address        TEXT,
+                          parent_name    VARCHAR(255),
+                          parent_phone   VARCHAR(20),                    -- format international +224XXXXXXXXX
+                          medical_notes  TEXT,
+                          is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
+                          created_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT chk_student_gender CHECK (gender IS NULL OR gender IN ('M', 'F'))
+                          CONSTRAINT chk_student_gender CHECK (gender IS NULL OR gender IN ('M', 'F'))
 );
 
 
@@ -308,25 +340,25 @@ CREATE TABLE students (
 --
 -- Enums Java associés : EnrollmentStatus, PromotionStatus
 CREATE TABLE enrollments (
-    id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id             UUID        NOT NULL REFERENCES students (id) ON DELETE CASCADE,
-    class_id               UUID        NOT NULL REFERENCES classes (id),
-    academic_year_id       UUID        NOT NULL REFERENCES academic_years (id),
-    enrollment_date        DATE        NOT NULL DEFAULT CURRENT_DATE,
-    is_repeating           BOOLEAN     NOT NULL DEFAULT FALSE,
-    status                 VARCHAR(20) NOT NULL DEFAULT 'ENROLLED',
-    promotion_status       VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                             id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                             student_id             UUID        NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+                             class_id               UUID        NOT NULL REFERENCES classes (id),
+                             academic_year_id       UUID        NOT NULL REFERENCES academic_years (id),
+                             enrollment_date        DATE        NOT NULL DEFAULT CURRENT_DATE,
+                             is_repeating           BOOLEAN     NOT NULL DEFAULT FALSE,
+                             status                 VARCHAR(20) NOT NULL DEFAULT 'ENROLLED',
+                             promotion_status       VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     -- Traçabilité de la décision de passage (F-19) : qui a validé, et quand.
     -- Ces deux colonnes rendent inutile un statut « OVERRIDDEN » : un override
     -- du directeur produit un statut FINAL (PROMOTED ou REPEATED) et laisse
     -- sa signature ici.
-    promotion_validated_by UUID        REFERENCES users (id) ON DELETE SET NULL,
-    promotion_validated_at TIMESTAMPTZ,
-    transfer_notes         VARCHAR(500),           -- obligatoire si status = TRANSFERRED
-    final_average          DECIMAL(5, 2),          -- moyenne annuelle, base du passage
-    notes                  TEXT,
-    created_at             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                             promotion_validated_by UUID        REFERENCES users (id) ON DELETE SET NULL,
+                             promotion_validated_at TIMESTAMPTZ,
+                             transfer_notes         VARCHAR(500),           -- obligatoire si status = TRANSFERRED
+                             final_average          DECIMAL(5, 2),          -- moyenne annuelle, base du passage
+                             notes                  TEXT,
+                             created_at             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                             updated_at             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : EnrollmentStatus
     --   ENROLLED    : inscrit et actif — SEUL statut comptant dans les effectifs
@@ -335,24 +367,24 @@ CREATE TABLE enrollments (
     --   WITHDRAWN   : a quitté l'école en cours d'année (abandon, départ famille)
     --   GRADUATED   : a terminé le cycle
     -- ATTENTION : la vue matérialisée mv_dashboard_stats filtre sur 'ENROLLED'.
-    CONSTRAINT chk_enrollment_status CHECK (
-        status IN ('ENROLLED', 'TRANSFERRED', 'WITHDRAWN', 'GRADUATED')
-    ),
+                             CONSTRAINT chk_enrollment_status CHECK (
+                                 status IN ('ENROLLED', 'TRANSFERRED', 'WITHDRAWN', 'GRADUATED')
+                                 ),
 
     -- Enum Java : PromotionStatus
     --   PENDING   : décision non encore prise (valeur par défaut)
     --   PROMOTED  : admis en classe supérieure
     --   REPEATED  : redouble (réinscription dans la même classe)
     --   GRADUATED : fin de cycle (dernière classe du dernier niveau)
-    CONSTRAINT chk_promotion_status CHECK (
-        promotion_status IN ('PENDING', 'PROMOTED', 'REPEATED', 'GRADUATED')
-    ),
+                             CONSTRAINT chk_promotion_status CHECK (
+                                 promotion_status IN ('PENDING', 'PROMOTED', 'REPEATED', 'GRADUATED')
+                                 ),
 
     -- Une seule inscription par élève et par année scolaire (F-09).
-    CONSTRAINT uq_enrollment_per_year UNIQUE (student_id, academic_year_id),
-    CONSTRAINT chk_final_average      CHECK (
-        final_average IS NULL OR final_average BETWEEN 0 AND 20
-    )
+                             CONSTRAINT uq_enrollment_per_year UNIQUE (student_id, academic_year_id),
+                             CONSTRAINT chk_final_average      CHECK (
+                                 final_average IS NULL OR final_average BETWEEN 0 AND 20
+                                 )
 );
 
 
@@ -374,38 +406,38 @@ CREATE TABLE enrollments (
 -- NOTE : prévu pour la phase 3. La table est créée dès maintenant, mais le code
 -- Java correspondant n'est pas implémenté dans le MVP.
 CREATE TABLE promotion_batches (
-    id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    academic_year_id      UUID        NOT NULL REFERENCES academic_years (id) ON DELETE RESTRICT,
-    next_academic_year_id UUID        NOT NULL REFERENCES academic_years (id) ON DELETE RESTRICT,
-    class_id              UUID        NOT NULL REFERENCES classes (id)        ON DELETE RESTRICT,
-    status                VARCHAR(20) NOT NULL DEFAULT 'CREATED',
-    promoted_count        INTEGER     NOT NULL DEFAULT 0,
-    repeated_count        INTEGER     NOT NULL DEFAULT 0,
-    graduated_count       INTEGER     NOT NULL DEFAULT 0,
-    total_processed       INTEGER     NOT NULL DEFAULT 0,
-    validation_errors     TEXT,
-    executed_at           TIMESTAMPTZ,
-    notes                 TEXT,
-    director_comment      TEXT,
-    created_at            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                   academic_year_id      UUID        NOT NULL REFERENCES academic_years (id) ON DELETE RESTRICT,
+                                   next_academic_year_id UUID        NOT NULL REFERENCES academic_years (id) ON DELETE RESTRICT,
+                                   class_id              UUID        NOT NULL REFERENCES classes (id)        ON DELETE RESTRICT,
+                                   status                VARCHAR(20) NOT NULL DEFAULT 'CREATED',
+                                   promoted_count        INTEGER     NOT NULL DEFAULT 0,
+                                   repeated_count        INTEGER     NOT NULL DEFAULT 0,
+                                   graduated_count       INTEGER     NOT NULL DEFAULT 0,
+                                   total_processed       INTEGER     NOT NULL DEFAULT 0,
+                                   validation_errors     TEXT,
+                                   executed_at           TIMESTAMPTZ,
+                                   notes                 TEXT,
+                                   director_comment      TEXT,
+                                   created_at            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   updated_at            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT chk_promotion_batch_status CHECK (
-        status IN ('CREATED', 'VALIDATED', 'EXECUTED', 'CANCELLED')
-    ),
-    CONSTRAINT chk_promotion_batch_counts CHECK (
-        promoted_count      >= 0
-        AND repeated_count  >= 0
-        AND graduated_count >= 0
-        AND total_processed >= 0
-    ),
-    CONSTRAINT chk_promotion_batch_total CHECK (
-        total_processed >= promoted_count + repeated_count + graduated_count
-    ),
+                                   CONSTRAINT chk_promotion_batch_status CHECK (
+                                       status IN ('CREATED', 'VALIDATED', 'EXECUTED', 'CANCELLED')
+                                       ),
+                                   CONSTRAINT chk_promotion_batch_counts CHECK (
+                                       promoted_count      >= 0
+                                           AND repeated_count  >= 0
+                                           AND graduated_count >= 0
+                                           AND total_processed >= 0
+                                       ),
+                                   CONSTRAINT chk_promotion_batch_total CHECK (
+                                       total_processed >= promoted_count + repeated_count + graduated_count
+                                       ),
     -- On ne promeut pas une année vers elle-même.
-    CONSTRAINT chk_promotion_batch_years CHECK (
-        academic_year_id <> next_academic_year_id
-    )
+                                   CONSTRAINT chk_promotion_batch_years CHECK (
+                                       academic_year_id <> next_academic_year_id
+                                       )
 );
 
 
@@ -419,17 +451,17 @@ CREATE TABLE promotion_batches (
 --
 -- Enum Java associé : FeeType
 CREATE TABLE fee_structures (
-    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    academic_year_id     UUID           NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
-    class_id             UUID           REFERENCES classes (id) ON DELETE CASCADE,
-    fee_type             VARCHAR(20)    NOT NULL,
-    label                VARCHAR(255)   NOT NULL,
-    amount               DECIMAL(19, 2) NOT NULL,   -- montant en GNF
-    due_date             DATE,                      -- nullable : frais sans échéance fixe
-    installments_allowed BOOLEAN        NOT NULL DEFAULT FALSE,
-    max_installments     SMALLINT       DEFAULT 3,
-    created_at           TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at           TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                academic_year_id     UUID           NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
+                                class_id             UUID           REFERENCES classes (id) ON DELETE CASCADE,
+                                fee_type             VARCHAR(20)    NOT NULL,
+                                label                VARCHAR(255)   NOT NULL,
+                                amount               DECIMAL(19, 2) NOT NULL,   -- montant en GNF
+                                due_date             DATE,                      -- nullable : frais sans échéance fixe
+                                installments_allowed BOOLEAN        NOT NULL DEFAULT FALSE,
+                                max_installments     SMALLINT       DEFAULT 3,
+                                created_at           TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                updated_at           TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : FeeType
     --   TUITION      : frais de scolarité (le frais principal, souvent échelonné)
@@ -439,14 +471,14 @@ CREATE TABLE fee_structures (
     --   EXAM         : frais d'examen (BEPC, BAC, examens blancs)
     --   ACTIVITY     : sorties et activités parascolaires
     --   OTHER        : fournitures, tenue scolaire, divers
-    CONSTRAINT chk_fee_type CHECK (
-        fee_type IN ('TUITION', 'REGISTRATION', 'CANTEEN', 'TRANSPORT',
-                     'EXAM', 'ACTIVITY', 'OTHER')
-    ),
-    CONSTRAINT chk_fee_amount       CHECK (amount >= 0),
-    CONSTRAINT chk_max_installments CHECK (
-        max_installments IS NULL OR max_installments BETWEEN 1 AND 12
-    )
+                                CONSTRAINT chk_fee_type CHECK (
+                                    fee_type IN ('TUITION', 'REGISTRATION', 'CANTEEN', 'TRANSPORT',
+                                                 'EXAM', 'ACTIVITY', 'OTHER')
+                                    ),
+                                CONSTRAINT chk_fee_amount       CHECK (amount >= 0),
+                                CONSTRAINT chk_max_installments CHECK (
+                                    max_installments IS NULL OR max_installments BETWEEN 1 AND 12
+                                    )
 );
 
 -- Unicité de la grille tarifaire.
@@ -477,20 +509,20 @@ CREATE UNIQUE INDEX uq_fee_structure_per_class
 --
 -- Enum Java associé : FeeStatus
 CREATE TABLE student_fees (
-    id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    enrollment_id         UUID           NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE,
-    fee_structure_id      UUID           NOT NULL REFERENCES fee_structures (id),
-    amount_due            DECIMAL(19, 2) NOT NULL,
-    amount_paid           DECIMAL(19, 2) NOT NULL DEFAULT 0,   -- calculé par trigger
-    discount_amount       DECIMAL(19, 2) NOT NULL DEFAULT 0,   -- bourse, fratrie, cas social
-    discount_reason       VARCHAR(255),
-    due_date              DATE,                                -- hérité de fee_structure
-    status                VARCHAR(20)    NOT NULL DEFAULT 'UNPAID',   -- calculé par trigger
+                              id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                              enrollment_id         UUID           NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE,
+                              fee_structure_id      UUID           NOT NULL REFERENCES fee_structures (id),
+                              amount_due            DECIMAL(19, 2) NOT NULL,
+                              amount_paid           DECIMAL(19, 2) NOT NULL DEFAULT 0,   -- calculé par trigger
+                              discount_amount       DECIMAL(19, 2) NOT NULL DEFAULT 0,   -- bourse, fratrie, cas social
+                              discount_reason       VARCHAR(255),
+                              due_date              DATE,                                -- hérité de fee_structure
+                              status                VARCHAR(20)    NOT NULL DEFAULT 'UNPAID',   -- calculé par trigger
     -- Anti-spam des rappels SMS : un parent ne reçoit au maximum qu'un rappel
     -- par semaine et par frais (F-13).
-    last_reminder_sent_at TIMESTAMPTZ,
-    created_at            TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at            TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              last_reminder_sent_at TIMESTAMPTZ,
+                              created_at            TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              updated_at            TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : FeeStatus
     --   UNPAID  : aucun paiement, échéance non dépassée (valeur par défaut)
@@ -500,20 +532,20 @@ CREATE TABLE student_fees (
     --             (positionné par le scheduler quotidien, à minuit heure locale)
     --   WAIVED  : exonéré par décision du directeur — SEUL statut posé
     --             manuellement, jamais écrasé par le trigger
-    CONSTRAINT chk_student_fee_status CHECK (
-        status IN ('UNPAID', 'PARTIAL', 'PAID', 'OVERDUE', 'WAIVED')
-    ),
+                              CONSTRAINT chk_student_fee_status CHECK (
+                                  status IN ('UNPAID', 'PARTIAL', 'PAID', 'OVERDUE', 'WAIVED')
+                                  ),
 
     -- Empêche les doublons de frais : double-clic du comptable, ou double appel
     -- accidentel de generateFeesForEnrollment().
-    CONSTRAINT uq_student_fee UNIQUE (enrollment_id, fee_structure_id),
+                              CONSTRAINT uq_student_fee UNIQUE (enrollment_id, fee_structure_id),
 
-    CONSTRAINT chk_student_fee_amounts CHECK (
-        amount_due          >= 0
-        AND amount_paid     >= 0
-        AND discount_amount >= 0
-        AND discount_amount <= amount_due
-    )
+                              CONSTRAINT chk_student_fee_amounts CHECK (
+                                  amount_due          >= 0
+                                      AND amount_paid     >= 0
+                                      AND discount_amount >= 0
+                                      AND discount_amount <= amount_due
+                                  )
 );
 
 
@@ -526,25 +558,25 @@ CREATE TABLE student_fees (
 --
 -- Enums Java associés : PaymentMethod, PaymentStatus
 CREATE TABLE payments (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id          UUID           NOT NULL REFERENCES students (id),
-    receipt_number      VARCHAR(30)    UNIQUE,     -- REC-YYYYMM-NNNN, généré par trigger
-    amount              DECIMAL(19, 2) NOT NULL,
+                          id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                          student_id          UUID           NOT NULL REFERENCES students (id),
+                          receipt_number      VARCHAR(30)    UNIQUE,     -- REC-YYYYMM-NNNN, généré par trigger
+                          amount              DECIMAL(19, 2) NOT NULL,
     -- Type DATE et non TIMESTAMPTZ : un paiement a une date, pas une heure
     -- précise. Cela évite les décalages de fuseau horaire dans les rapports
     -- journaliers et mensuels (« recettes du 15 novembre »).
-    payment_date        DATE           NOT NULL DEFAULT CURRENT_DATE,
-    payment_method      VARCHAR(20)    NOT NULL,
-    payment_status      VARCHAR(20)    NOT NULL DEFAULT 'CONFIRMED',
-    reference_number    VARCHAR(100),  -- réf. Orange Money, n° de virement, n° de chèque
-    notes               TEXT,
-    recorded_by         UUID           REFERENCES users (id) ON DELETE SET NULL,
+                          payment_date        DATE           NOT NULL DEFAULT CURRENT_DATE,
+                          payment_method      VARCHAR(20)    NOT NULL,
+                          payment_status      VARCHAR(20)    NOT NULL DEFAULT 'CONFIRMED',
+                          reference_number    VARCHAR(100),  -- réf. Orange Money, n° de virement, n° de chèque
+                          notes               TEXT,
+                          recorded_by         UUID           REFERENCES users (id) ON DELETE SET NULL,
     -- Traçabilité de l'annulation (F-12).
-    cancellation_reason VARCHAR(500),
-    cancelled_by        UUID           REFERENCES users (id) ON DELETE SET NULL,
-    cancelled_at        TIMESTAMPTZ,
-    created_at          TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          cancellation_reason VARCHAR(500),
+                          cancelled_by        UUID           REFERENCES users (id) ON DELETE SET NULL,
+                          cancelled_at        TIMESTAMPTZ,
+                          created_at          TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at          TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : PaymentMethod
     --   CASH          : espèces au guichet — méthode dominante en Guinée
@@ -556,27 +588,27 @@ CREATE TABLE payments (
     -- Les opérateurs sont distingués (et non regroupés sous un MOBILE_MONEY
     -- générique) pour permettre au directeur de répondre à la question
     -- « combien avons-nous encaissé via Orange Money ce mois-ci ? ».
-    CONSTRAINT chk_payment_method CHECK (
-        payment_method IN ('CASH', 'ORANGE_MONEY', 'MTN_MONEY', 'WAVE',
-                           'BANK_TRANSFER', 'CHECK')
-    ),
+                          CONSTRAINT chk_payment_method CHECK (
+                              payment_method IN ('CASH', 'ORANGE_MONEY', 'MTN_MONEY', 'WAVE',
+                                                 'BANK_TRANSFER', 'CHECK')
+                              ),
 
     -- Enum Java : PaymentStatus
     --   CONFIRMED : encaissé (valeur par défaut)
     --               SEUL statut comptant dans le calcul du solde des frais
     --   CANCELLED : annulé (erreur de saisie, fenêtre de 24h)
     --   REFUNDED  : remboursé au parent (départ de l'élève, trop-perçu)
-    CONSTRAINT chk_payment_status CHECK (
-        payment_status IN ('CONFIRMED', 'CANCELLED', 'REFUNDED')
-    ),
+                          CONSTRAINT chk_payment_status CHECK (
+                              payment_status IN ('CONFIRMED', 'CANCELLED', 'REFUNDED')
+                              ),
 
-    CONSTRAINT chk_payment_amount CHECK (amount > 0),
+                          CONSTRAINT chk_payment_amount CHECK (amount > 0),
 
     -- Un paiement annulé porte obligatoirement un motif et un horodatage.
-    CONSTRAINT chk_payment_cancellation CHECK (
-        payment_status <> 'CANCELLED'
-        OR (cancellation_reason IS NOT NULL AND cancelled_at IS NOT NULL)
-    )
+                          CONSTRAINT chk_payment_cancellation CHECK (
+                              payment_status <> 'CANCELLED'
+                                  OR (cancellation_reason IS NOT NULL AND cancelled_at IS NOT NULL)
+                              )
 );
 
 
@@ -586,16 +618,16 @@ CREATE TABLE payments (
 -- la cantine et le transport. La somme des allocations doit être égale au
 -- montant du paiement (vérifié par PaymentService, code ALLOCATION_MISMATCH).
 CREATE TABLE payment_allocations (
-    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    payment_id     UUID           NOT NULL REFERENCES payments (id)     ON DELETE CASCADE,
-    student_fee_id UUID           NOT NULL REFERENCES student_fees (id) ON DELETE CASCADE,
-    amount         DECIMAL(19, 2) NOT NULL,
-    created_at     TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at     TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                     payment_id     UUID           NOT NULL REFERENCES payments (id)     ON DELETE CASCADE,
+                                     student_fee_id UUID           NOT NULL REFERENCES student_fees (id) ON DELETE CASCADE,
+                                     amount         DECIMAL(19, 2) NOT NULL,
+                                     created_at     TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     updated_at     TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT chk_allocation_amount CHECK (amount > 0),
+                                     CONSTRAINT chk_allocation_amount CHECK (amount > 0),
     -- Un même paiement ne peut pas imputer deux fois le même frais.
-    CONSTRAINT uq_payment_allocation UNIQUE (payment_id, student_fee_id)
+                                     CONSTRAINT uq_payment_allocation UNIQUE (payment_id, student_fee_id)
 );
 
 
@@ -608,25 +640,25 @@ CREATE TABLE payment_allocations (
 --
 -- Enum Java associé : SmsCategory
 CREATE TABLE sms_templates (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code       VARCHAR(50) UNIQUE NOT NULL,        -- fee_reminder, payment_received...
-    category   VARCHAR(20) NOT NULL,
-    content_fr TEXT        NOT NULL,
-    variables  JSONB       NOT NULL,               -- liste des variables attendues
+                               id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                               code       VARCHAR(50) UNIQUE NOT NULL,        -- fee_reminder, payment_received...
+                               category   VARCHAR(20) NOT NULL,
+                               content_fr TEXT        NOT NULL,
+                               variables  JSONB       NOT NULL,               -- liste des variables attendues
     -- Permet au directeur de désactiver un modèle sans le supprimer
     -- (ex : suspendre les notifications d'absence pendant les vacances).
-    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+                               created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : SmsCategory
     --   FINANCIAL      : relances et confirmations de paiement
     --   ACADEMIC       : bulletins, absences
     --   ADMINISTRATIVE : convocations, informations générales
     --   CUSTOM         : message libre rédigé par le directeur
-    CONSTRAINT chk_sms_template_category CHECK (
-        category IN ('FINANCIAL', 'ACADEMIC', 'ADMINISTRATIVE', 'CUSTOM')
-    )
+                               CONSTRAINT chk_sms_template_category CHECK (
+                                   category IN ('FINANCIAL', 'ACADEMIC', 'ADMINISTRATIVE', 'CUSTOM')
+                                   )
 );
 
 
@@ -635,36 +667,36 @@ CREATE TABLE sms_templates (
 --
 -- Enums Java associés : SmsStatus, SmsCategory
 CREATE TABLE sms_logs (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    template_id         UUID        REFERENCES sms_templates (id) ON DELETE SET NULL,
-    student_id          UUID        REFERENCES students (id)      ON DELETE SET NULL,
-    recipient_phone     VARCHAR(20) NOT NULL,
-    message             TEXT        NOT NULL,      -- contenu APRÈS résolution des variables
-    category            VARCHAR(20),
-    provider            VARCHAR(50),               -- orange | twilio | logging
-    provider_message_id VARCHAR(100),
-    status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    error_code          VARCHAR(50),
-    error_message       TEXT,
-    sent_at             TIMESTAMPTZ,
-    delivered_at        TIMESTAMPTZ,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                          template_id         UUID        REFERENCES sms_templates (id) ON DELETE SET NULL,
+                          student_id          UUID        REFERENCES students (id)      ON DELETE SET NULL,
+                          recipient_phone     VARCHAR(20) NOT NULL,
+                          message             TEXT        NOT NULL,      -- contenu APRÈS résolution des variables
+                          category            VARCHAR(20),
+                          provider            VARCHAR(50),               -- orange | twilio | logging
+                          provider_message_id VARCHAR(100),
+                          status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                          error_code          VARCHAR(50),
+                          error_message       TEXT,
+                          sent_at             TIMESTAMPTZ,
+                          delivered_at        TIMESTAMPTZ,
+                          created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : SmsStatus
     --   PENDING   : créé en base, pas encore transmis à l'opérateur (défaut)
     --   SENT      : transmis à l'opérateur et accepté par lui
     --   DELIVERED : accusé de réception confirmé — le SMS est arrivé
     --   FAILED    : échec définitif (error_code et error_message renseignés)
-    CONSTRAINT chk_sms_status CHECK (
-        status IN ('PENDING', 'SENT', 'DELIVERED', 'FAILED')
-    ),
+                          CONSTRAINT chk_sms_status CHECK (
+                              status IN ('PENDING', 'SENT', 'DELIVERED', 'FAILED')
+                              ),
 
     -- Enum Java : SmsCategory (mêmes valeurs que sms_templates.category)
-    CONSTRAINT chk_sms_log_category CHECK (
-        category IS NULL
-        OR category IN ('FINANCIAL', 'ACADEMIC', 'ADMINISTRATIVE', 'CUSTOM')
-    )
+                          CONSTRAINT chk_sms_log_category CHECK (
+                              category IS NULL
+                                  OR category IN ('FINANCIAL', 'ACADEMIC', 'ADMINISTRATIVE', 'CUSTOM')
+                              )
 );
 
 
@@ -676,33 +708,33 @@ CREATE TABLE sms_logs (
 --
 -- Enum Java associé : EvaluationType
 CREATE TABLE grades (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    enrollment_id    UUID          NOT NULL REFERENCES enrollments (id)    ON DELETE CASCADE,
-    class_subject_id UUID          NOT NULL REFERENCES class_subjects (id) ON DELETE CASCADE,
-    term_id          UUID          NOT NULL REFERENCES terms (id)          ON DELETE CASCADE,
-    value            DECIMAL(4, 2) NOT NULL,       -- note sur 20
-    evaluation_type  VARCHAR(20)   NOT NULL,
-    evaluation_label VARCHAR(100)  NOT NULL,       -- "Devoir 1", "Composition T1"
-    evaluation_date  DATE          NOT NULL,
-    entered_by       UUID          REFERENCES users (id) ON DELETE SET NULL,
-    comment          TEXT,
-    created_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        enrollment_id    UUID          NOT NULL REFERENCES enrollments (id)    ON DELETE CASCADE,
+                        class_subject_id UUID          NOT NULL REFERENCES class_subjects (id) ON DELETE CASCADE,
+                        term_id          UUID          NOT NULL REFERENCES terms (id)          ON DELETE CASCADE,
+                        value            DECIMAL(4, 2) NOT NULL,       -- note sur 20
+                        evaluation_type  VARCHAR(20)   NOT NULL,
+                        evaluation_label VARCHAR(100)  NOT NULL,       -- "Devoir 1", "Composition T1"
+                        evaluation_date  DATE          NOT NULL,
+                        entered_by       UUID          REFERENCES users (id) ON DELETE SET NULL,
+                        comment          TEXT,
+                        created_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : EvaluationType
     --   DEVOIR      : devoir écrit en classe ou à la maison
     --   COMPOSITION : composition trimestrielle (évaluation principale)
     --   ORAL        : interrogation ou exposé oral
     --   TP          : travaux pratiques (sciences, informatique)
-    CONSTRAINT chk_evaluation_type CHECK (
-        evaluation_type IN ('DEVOIR', 'COMPOSITION', 'ORAL', 'TP')
-    ),
+                        CONSTRAINT chk_evaluation_type CHECK (
+                            evaluation_type IN ('DEVOIR', 'COMPOSITION', 'ORAL', 'TP')
+                            ),
 
     -- Pas deux « Devoir 1 » en Maths au T1 pour le même élève
     -- (F-15, code erreur DUPLICATE_GRADE).
-    CONSTRAINT uq_grade        UNIQUE (enrollment_id, class_subject_id,
-                                       term_id, evaluation_label),
-    CONSTRAINT chk_grade_value CHECK (value BETWEEN 0 AND 20)
+                        CONSTRAINT uq_grade        UNIQUE (enrollment_id, class_subject_id,
+                                                           term_id, evaluation_label),
+                        CONSTRAINT chk_grade_value CHECK (value BETWEEN 0 AND 20)
 );
 
 
@@ -710,19 +742,19 @@ CREATE TABLE grades (
 --
 -- Enum Java associé : ReportCardStatus
 CREATE TABLE report_cards (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    enrollment_id    UUID          NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE,
-    term_id          UUID          NOT NULL REFERENCES terms (id)       ON DELETE CASCADE,
-    general_average  DECIMAL(5, 2),                -- Σ(moy_matière × coef) / Σ(coef)
-    rank_in_class    SMALLINT,
-    class_size       SMALLINT,
-    teacher_comment  TEXT,
-    director_comment TEXT,
-    status           VARCHAR(20)   NOT NULL DEFAULT 'DRAFT',
-    pdf_url          VARCHAR(255),                 -- rempli à la publication (génération async)
-    published_at     TIMESTAMPTZ,
-    created_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                              enrollment_id    UUID          NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE,
+                              term_id          UUID          NOT NULL REFERENCES terms (id)       ON DELETE CASCADE,
+                              general_average  DECIMAL(5, 2),                -- Σ(moy_matière × coef) / Σ(coef)
+                              rank_in_class    SMALLINT,
+                              class_size       SMALLINT,
+                              teacher_comment  TEXT,
+                              director_comment TEXT,
+                              status           VARCHAR(20)   NOT NULL DEFAULT 'DRAFT',
+                              pdf_url          VARCHAR(255),                 -- rempli à la publication (génération async)
+                              published_at     TIMESTAMPTZ,
+                              created_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              updated_at       TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : ReportCardStatus
     --   DRAFT          : brouillon — moyennes calculées, appréciations modifiables
@@ -730,23 +762,23 @@ CREATE TABLE report_cards (
     --   SENT_TO_PARENT : SMS de notification envoyé — état terminal
     -- Le passage à SENT_TO_PARENT est indispensable : sans lui, impossible de
     -- savoir si le parent a été notifié, et le système renverrait le SMS en boucle.
-    CONSTRAINT chk_report_card_status CHECK (
-        status IN ('DRAFT', 'PUBLISHED', 'SENT_TO_PARENT')
-    ),
+                              CONSTRAINT chk_report_card_status CHECK (
+                                  status IN ('DRAFT', 'PUBLISHED', 'SENT_TO_PARENT')
+                                  ),
 
-    CONSTRAINT uq_report_card          UNIQUE (enrollment_id, term_id),
-    CONSTRAINT chk_report_card_average CHECK (
-        general_average IS NULL OR general_average BETWEEN 0 AND 20
-    ),
-    CONSTRAINT chk_report_card_rank    CHECK (
-        rank_in_class IS NULL
-        OR (rank_in_class > 0 AND rank_in_class <= class_size)
-    ),
+                              CONSTRAINT uq_report_card          UNIQUE (enrollment_id, term_id),
+                              CONSTRAINT chk_report_card_average CHECK (
+                                  general_average IS NULL OR general_average BETWEEN 0 AND 20
+                                  ),
+                              CONSTRAINT chk_report_card_rank    CHECK (
+                                  rank_in_class IS NULL
+                                      OR (rank_in_class > 0 AND rank_in_class <= class_size)
+                                  ),
     -- Un bulletin publié possède forcément une moyenne et une date de publication.
-    CONSTRAINT chk_report_card_published CHECK (
-        status = 'DRAFT'
-        OR (general_average IS NOT NULL AND published_at IS NOT NULL)
-    )
+                              CONSTRAINT chk_report_card_published CHECK (
+                                  status = 'DRAFT'
+                                      OR (general_average IS NOT NULL AND published_at IS NOT NULL)
+                                  )
 );
 
 
@@ -758,15 +790,15 @@ CREATE TABLE report_cards (
 --
 -- Enums Java associés : AttendanceStatus, Period
 CREATE TABLE attendance (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    enrollment_id UUID        NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE,
-    date          DATE        NOT NULL,
-    period        VARCHAR(20) NOT NULL DEFAULT 'FULL_DAY',
-    status        VARCHAR(20) NOT NULL,
-    justification TEXT,                            -- obligatoire si status = EXCUSED
-    recorded_by   UUID        REFERENCES users (id) ON DELETE SET NULL,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            enrollment_id UUID        NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE,
+                            date          DATE        NOT NULL,
+                            period        VARCHAR(20) NOT NULL DEFAULT 'FULL_DAY',
+                            status        VARCHAR(20) NOT NULL,
+                            justification TEXT,                            -- obligatoire si status = EXCUSED
+                            recorded_by   UUID        REFERENCES users (id) ON DELETE SET NULL,
+                            created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : AttendanceStatus
     --   PRESENT : présent
@@ -778,27 +810,27 @@ CREATE TABLE attendance (
     -- Le modèle ne retient qu'un seul axe (présence), et non deux axes croisés
     -- (présence × caractère justifié). Une absence ABSENT est régularisable
     -- a posteriori : le directeur la passe en EXCUSED et saisit la justification.
-    CONSTRAINT chk_attendance_status CHECK (
-        status IN ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED')
-    ),
+                            CONSTRAINT chk_attendance_status CHECK (
+                                status IN ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED')
+                                ),
 
     -- Enum Java : Period
     --   FULL_DAY  : journée entière (un seul appel par jour) — valeur par défaut
     --   MORNING   : matinée
     --   AFTERNOON : après-midi
     --   EVENING   : cours du soir
-    CONSTRAINT chk_attendance_period CHECK (
-        period IN ('FULL_DAY', 'MORNING', 'AFTERNOON', 'EVENING')
-    ),
+                            CONSTRAINT chk_attendance_period CHECK (
+                                period IN ('FULL_DAY', 'MORNING', 'AFTERNOON', 'EVENING')
+                                ),
 
     -- Un seul appel par élève, par jour et par période
     -- (F-17, code erreur ATTENDANCE_ALREADY_RECORDED).
-    CONSTRAINT uq_attendance UNIQUE (enrollment_id, date, period),
+                            CONSTRAINT uq_attendance UNIQUE (enrollment_id, date, period),
 
     -- Une absence justifiée porte obligatoirement sa justification.
-    CONSTRAINT chk_attendance_excused CHECK (
-        status <> 'EXCUSED' OR justification IS NOT NULL
-    )
+                            CONSTRAINT chk_attendance_excused CHECK (
+                                status <> 'EXCUSED' OR justification IS NOT NULL
+                                )
 );
 
 
@@ -811,42 +843,42 @@ CREATE TABLE attendance (
 -- Enum Java associé : DayOfWeek (enum PROPRE au projet, à ne pas confondre avec
 -- java.time.DayOfWeek qui inclut SUNDAY et n'est pas modifiable).
 CREATE TABLE time_slots (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    day_of_week VARCHAR(10) NOT NULL,
-    start_time  TIME        NOT NULL,
-    end_time    TIME        NOT NULL,
-    label       VARCHAR(30),                       -- "Heure 1", "Pause déjeuner"
-    order_index SMALLINT    NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            day_of_week VARCHAR(10) NOT NULL,
+                            start_time  TIME        NOT NULL,
+                            end_time    TIME        NOT NULL,
+                            label       VARCHAR(30),                       -- "Heure 1", "Pause déjeuner"
+                            order_index SMALLINT    NOT NULL,
+                            created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Enum Java : DayOfWeek
     -- Limité à MONDAY..SATURDAY : les écoles guinéennes n'ont pas cours le
     -- dimanche. SUNDAY est volontairement exclu pour empêcher la saisie d'un
     -- créneau aberrant.
-    CONSTRAINT chk_day_of_week CHECK (
-        day_of_week IN ('MONDAY', 'TUESDAY', 'WEDNESDAY',
-                        'THURSDAY', 'FRIDAY', 'SATURDAY')
-    ),
+                            CONSTRAINT chk_day_of_week CHECK (
+                                day_of_week IN ('MONDAY', 'TUESDAY', 'WEDNESDAY',
+                                                'THURSDAY', 'FRIDAY', 'SATURDAY')
+                                ),
 
-    CONSTRAINT uq_time_slot        UNIQUE (day_of_week, start_time, end_time),
-    CONSTRAINT chk_time_slot_times CHECK (end_time > start_time)
+                            CONSTRAINT uq_time_slot        UNIQUE (day_of_week, start_time, end_time),
+                            CONSTRAINT chk_time_slot_times CHECK (end_time > start_time)
 );
 
 
 -- Placement d'une matière dans la grille hebdomadaire.
 CREATE TABLE timetable_entries (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    class_subject_id UUID        NOT NULL REFERENCES class_subjects (id) ON DELETE CASCADE,
-    time_slot_id     UUID        NOT NULL REFERENCES time_slots (id)     ON DELETE CASCADE,
-    academic_year_id UUID        NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
-    term_id          UUID        REFERENCES terms (id) ON DELETE CASCADE,  -- NULL = toute l'année
-    room_number      VARCHAR(20),
-    is_active        BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                   class_subject_id UUID        NOT NULL REFERENCES class_subjects (id) ON DELETE CASCADE,
+                                   time_slot_id     UUID        NOT NULL REFERENCES time_slots (id)     ON DELETE CASCADE,
+                                   academic_year_id UUID        NOT NULL REFERENCES academic_years (id) ON DELETE CASCADE,
+                                   term_id          UUID        REFERENCES terms (id) ON DELETE CASCADE,  -- NULL = toute l'année
+                                   room_number      VARCHAR(20),
+                                   is_active        BOOLEAN     NOT NULL DEFAULT TRUE,
+                                   created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   updated_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT uq_timetable_entry UNIQUE (class_subject_id, time_slot_id, academic_year_id)
+                                   CONSTRAINT uq_timetable_entry UNIQUE (class_subject_id, time_slot_id, academic_year_id)
 
     -- NOTE — Détection des conflits d'emploi du temps :
     -- Les deux règles suivantes nécessitent une jointure vers class_subjects et
@@ -868,8 +900,9 @@ CREATE TABLE timetable_entries (
 -- =============================================================================
 
 -- ── Identity ─────────────────────────────────────────────────────────────────
-CREATE INDEX idx_users_role   ON users (role) WHERE is_active = TRUE;
-CREATE INDEX idx_users_active ON users (is_active);
+CREATE INDEX idx_users_active     ON users (is_active);
+-- Sert à retrouver, par exemple, tous les utilisateurs actifs ayant un rôle donné.
+CREATE INDEX idx_user_roles_role   ON user_roles (role_id);
 
 -- ── Academic ─────────────────────────────────────────────────────────────────
 CREATE INDEX idx_terms_year             ON terms (academic_year_id);
@@ -960,6 +993,10 @@ CREATE INDEX idx_timetable_year          ON timetable_entries (academic_year_id)
 
 CREATE TRIGGER trg_updated_at_users
     BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+CREATE TRIGGER trg_updated_at_user_roles
+    BEFORE UPDATE ON user_roles
     FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE TRIGGER trg_updated_at_teachers
@@ -1063,20 +1100,20 @@ CREATE TRIGGER trg_updated_at_timetable_entries
 CREATE OR REPLACE FUNCTION fn_generate_student_number()
     RETURNS TRIGGER AS $$
 DECLARE
-    year_prefix TEXT := TO_CHAR(CURRENT_DATE, 'YYYY');
+year_prefix TEXT := TO_CHAR(CURRENT_DATE, 'YYYY');
     next_val    INTEGER;
 BEGIN
     -- Une seule transaction à la fois peut franchir cette ligne pour une année
     -- donnée ; les autres attendent.
     PERFORM pg_advisory_xact_lock(hashtext('student_number_' || year_prefix));
 
-    SELECT COALESCE(MAX(SPLIT_PART(student_number, '-', 3)::INTEGER), 0) + 1
-    INTO   next_val
-    FROM   students
-    WHERE  student_number LIKE 'EL-' || year_prefix || '-%';
+SELECT COALESCE(MAX(SPLIT_PART(student_number, '-', 3)::INTEGER), 0) + 1
+INTO   next_val
+FROM   students
+WHERE  student_number LIKE 'EL-' || year_prefix || '-%';
 
-    NEW.student_number := 'EL-' || year_prefix || '-' || LPAD(next_val::TEXT, 4, '0');
-    RETURN NEW;
+NEW.student_number := 'EL-' || year_prefix || '-' || LPAD(next_val::TEXT, 4, '0');
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1099,18 +1136,18 @@ CREATE TRIGGER trg_generate_student_number
 CREATE OR REPLACE FUNCTION fn_generate_receipt_number()
     RETURNS TRIGGER AS $$
 DECLARE
-    month_prefix TEXT := TO_CHAR(CURRENT_DATE, 'YYYYMM');
+month_prefix TEXT := TO_CHAR(CURRENT_DATE, 'YYYYMM');
     next_val     INTEGER;
 BEGIN
     PERFORM pg_advisory_xact_lock(hashtext('receipt_number_' || month_prefix));
 
-    SELECT COALESCE(MAX(SPLIT_PART(receipt_number, '-', 3)::INTEGER), 0) + 1
-    INTO   next_val
-    FROM   payments
-    WHERE  receipt_number LIKE 'REC-' || month_prefix || '-%';
+SELECT COALESCE(MAX(SPLIT_PART(receipt_number, '-', 3)::INTEGER), 0) + 1
+INTO   next_val
+FROM   payments
+WHERE  receipt_number LIKE 'REC-' || month_prefix || '-%';
 
-    NEW.receipt_number := 'REC-' || month_prefix || '-' || LPAD(next_val::TEXT, 4, '0');
-    RETURN NEW;
+NEW.receipt_number := 'REC-' || month_prefix || '-' || LPAD(next_val::TEXT, 4, '0');
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1152,7 +1189,7 @@ CREATE TRIGGER trg_generate_receipt_number
 CREATE OR REPLACE FUNCTION fn_recalculate_fee_status()
     RETURNS TRIGGER AS $$
 DECLARE
-    v_fee_id     UUID;
+v_fee_id     UUID;
     v_total_paid DECIMAL(19, 2);
     v_amount_due DECIMAL(19, 2);
     v_discount   DECIMAL(19, 2);
@@ -1164,38 +1201,38 @@ BEGIN
     v_fee_id := COALESCE(NEW.student_fee_id, OLD.student_fee_id);
 
     -- Seules les imputations issues d'un paiement CONFIRMED sont comptabilisées.
-    SELECT COALESCE(SUM(pa.amount), 0)
-    INTO   v_total_paid
-    FROM   payment_allocations pa
-    JOIN   payments p ON p.id = pa.payment_id
-    WHERE  pa.student_fee_id = v_fee_id
-      AND  p.payment_status  = 'CONFIRMED';
+SELECT COALESCE(SUM(pa.amount), 0)
+INTO   v_total_paid
+FROM   payment_allocations pa
+           JOIN   payments p ON p.id = pa.payment_id
+WHERE  pa.student_fee_id = v_fee_id
+  AND  p.payment_status  = 'CONFIRMED';
 
-    SELECT amount_due, discount_amount, due_date, status
-    INTO   v_amount_due, v_discount, v_due_date, v_status
-    FROM   student_fees
-    WHERE  id = v_fee_id;
+SELECT amount_due, discount_amount, due_date, status
+INTO   v_amount_due, v_discount, v_due_date, v_status
+FROM   student_fees
+WHERE  id = v_fee_id;
 
-    -- WAIVED est une décision manuelle du directeur (exonération) :
-    -- ne jamais l'écraser automatiquement.
-    IF v_status = 'WAIVED' THEN
+-- WAIVED est une décision manuelle du directeur (exonération) :
+-- ne jamais l'écraser automatiquement.
+IF v_status = 'WAIVED' THEN
         RETURN COALESCE(NEW, OLD);
-    END IF;
+END IF;
 
     v_remaining := v_amount_due - v_discount - v_total_paid;
 
-    UPDATE student_fees
-    SET amount_paid = v_total_paid,
-        status      = CASE
-            WHEN v_remaining <= 0                                     THEN 'PAID'
-            WHEN v_total_paid > 0                                     THEN 'PARTIAL'
-            WHEN v_due_date IS NOT NULL AND v_due_date < CURRENT_DATE THEN 'OVERDUE'
-            ELSE 'UNPAID'
+UPDATE student_fees
+SET amount_paid = v_total_paid,
+    status      = CASE
+                      WHEN v_remaining <= 0                                     THEN 'PAID'
+                      WHEN v_total_paid > 0                                     THEN 'PARTIAL'
+                      WHEN v_due_date IS NOT NULL AND v_due_date < CURRENT_DATE THEN 'OVERDUE'
+                      ELSE 'UNPAID'
         END,
-        updated_at  = CURRENT_TIMESTAMP
-    WHERE id = v_fee_id;
+    updated_at  = CURRENT_TIMESTAMP
+WHERE id = v_fee_id;
 
-    RETURN COALESCE(NEW, OLD);
+RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1219,7 +1256,7 @@ CREATE TRIGGER trg_recalculate_fee_status
 CREATE OR REPLACE FUNCTION fn_payment_status_changed()
     RETURNS TRIGGER AS $$
 DECLARE
-    v_fee_id     UUID;
+v_fee_id     UUID;
     v_total_paid DECIMAL(19, 2);
     v_amount_due DECIMAL(19, 2);
     v_discount   DECIMAL(19, 2);
@@ -1230,44 +1267,44 @@ BEGIN
     -- Rien à faire si le statut n'a pas changé.
     IF NEW.payment_status IS NOT DISTINCT FROM OLD.payment_status THEN
         RETURN NEW;
-    END IF;
+END IF;
 
     -- Recalculer chaque frais touché par ce paiement.
-    FOR v_fee_id IN
-        SELECT student_fee_id
-        FROM   payment_allocations
-        WHERE  payment_id = NEW.id
+FOR v_fee_id IN
+SELECT student_fee_id
+FROM   payment_allocations
+WHERE  payment_id = NEW.id
     LOOP
-        SELECT COALESCE(SUM(pa.amount), 0)
-        INTO   v_total_paid
-        FROM   payment_allocations pa
-        JOIN   payments p ON p.id = pa.payment_id
-        WHERE  pa.student_fee_id = v_fee_id
-          AND  p.payment_status  = 'CONFIRMED';
+SELECT COALESCE(SUM(pa.amount), 0)
+INTO   v_total_paid
+FROM   payment_allocations pa
+           JOIN   payments p ON p.id = pa.payment_id
+WHERE  pa.student_fee_id = v_fee_id
+  AND  p.payment_status  = 'CONFIRMED';
 
-        SELECT amount_due, discount_amount, due_date, status
-        INTO   v_amount_due, v_discount, v_due_date, v_status
-        FROM   student_fees
-        WHERE  id = v_fee_id;
+SELECT amount_due, discount_amount, due_date, status
+INTO   v_amount_due, v_discount, v_due_date, v_status
+FROM   student_fees
+WHERE  id = v_fee_id;
 
-        -- Ne jamais écraser une exonération.
-        CONTINUE WHEN v_status = 'WAIVED';
+-- Ne jamais écraser une exonération.
+CONTINUE WHEN v_status = 'WAIVED';
 
         v_remaining := v_amount_due - v_discount - v_total_paid;
 
-        UPDATE student_fees
-        SET amount_paid = v_total_paid,
-            status      = CASE
-                WHEN v_remaining <= 0                                     THEN 'PAID'
-                WHEN v_total_paid > 0                                     THEN 'PARTIAL'
-                WHEN v_due_date IS NOT NULL AND v_due_date < CURRENT_DATE THEN 'OVERDUE'
-                ELSE 'UNPAID'
-            END,
-            updated_at  = CURRENT_TIMESTAMP
-        WHERE id = v_fee_id;
-    END LOOP;
+UPDATE student_fees
+SET amount_paid = v_total_paid,
+    status      = CASE
+                      WHEN v_remaining <= 0                                     THEN 'PAID'
+                      WHEN v_total_paid > 0                                     THEN 'PARTIAL'
+                      WHEN v_due_date IS NOT NULL AND v_due_date < CURRENT_DATE THEN 'OVERDUE'
+                      ELSE 'UNPAID'
+        END,
+    updated_at  = CURRENT_TIMESTAMP
+WHERE id = v_fee_id;
+END LOOP;
 
-    RETURN NEW;
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1301,33 +1338,33 @@ CREATE MATERIALIZED VIEW mv_dashboard_stats AS
 SELECT
     -- Effectifs
     COALESCE(COUNT(DISTINCT e.id) FILTER (WHERE e.status = 'ENROLLED'), 0)
-        AS active_students,
+            AS active_students,
     COALESCE(COUNT(DISTINCT e.student_id), 0)
-        AS total_students,
+            AS total_students,
     COALESCE(COUNT(DISTINCT e.student_id) FILTER (WHERE s.gender = 'M'), 0)
-        AS male_students,
+            AS male_students,
     COALESCE(COUNT(DISTINCT e.student_id) FILTER (WHERE s.gender = 'F'), 0)
-        AS female_students,
+            AS female_students,
 
     -- Finances
     COALESCE(SUM(sf.amount_due - sf.discount_amount), 0)
-        AS total_fees_expected,
+            AS total_fees_expected,
     COALESCE(SUM(sf.amount_paid), 0)
-        AS total_fees_collected,
+            AS total_fees_collected,
     CASE
         WHEN COALESCE(SUM(sf.amount_due - sf.discount_amount), 0) > 0
             THEN ROUND(
                 100.0 * COALESCE(SUM(sf.amount_paid), 0)
-                / SUM(sf.amount_due - sf.discount_amount),
+                    / SUM(sf.amount_due - sf.discount_amount),
                 1
-            )
+                 )
         ELSE 0
-    END AS collection_rate_pct,
+        END AS collection_rate_pct,
     COALESCE(COUNT(DISTINCT e.id)
-        FILTER (WHERE sf.status IN ('UNPAID', 'PARTIAL', 'OVERDUE')), 0)
-        AS students_with_debt,
+             FILTER (WHERE sf.status IN ('UNPAID', 'PARTIAL', 'OVERDUE')), 0)
+            AS students_with_debt,
     COALESCE(COUNT(DISTINCT e.id) FILTER (WHERE sf.status = 'OVERDUE'), 0)
-        AS students_overdue,
+            AS students_overdue,
 
     -- Saisies de notes en attente : nombre de couples (matière × trimestre
     -- ouvert) pour lesquels aucune note n'a encore été saisie.
@@ -1337,32 +1374,32 @@ SELECT
     -- exister (colonne NOT NULL). Le compteur était donc inutile.
     (SELECT COUNT(*)
      FROM   class_subjects cs
-     CROSS JOIN terms t
+                CROSS JOIN terms t
      WHERE  t.grades_entry_open = TRUE
        AND  NOT EXISTS (
-                SELECT 1
-                FROM   grades g
-                WHERE  g.class_subject_id = cs.id
-                  AND  g.term_id          = t.id
-            ))
-        AS pending_grade_entries,
+         SELECT 1
+         FROM   grades g
+         WHERE  g.class_subject_id = cs.id
+           AND  g.term_id          = t.id
+     ))
+            AS pending_grade_entries,
 
     -- Volumétrie SMS
     (SELECT COUNT(*)
      FROM   sms_logs
      WHERE  DATE(created_at) = CURRENT_DATE)
-        AS sms_today,
+    AS sms_today,
     (SELECT COUNT(*)
-     FROM   sms_logs
-     WHERE  created_at >= DATE_TRUNC('month', CURRENT_TIMESTAMP))
-        AS sms_this_month
+FROM   sms_logs
+WHERE  created_at >= DATE_TRUNC('month', CURRENT_TIMESTAMP))
+    AS sms_this_month
 
 FROM      enrollments  e
-JOIN      students     s  ON e.student_id     = s.id
-LEFT JOIN student_fees sf ON sf.enrollment_id = e.id
+    JOIN      students     s  ON e.student_id     = s.id
+    LEFT JOIN student_fees sf ON sf.enrollment_id = e.id
 WHERE e.academic_year_id IN (
     SELECT id FROM academic_years WHERE is_current = TRUE LIMIT 1
-)
+    )
 WITH NO DATA;
 
 -- Index UNIQUE obligatoire pour autoriser REFRESH ... CONCURRENTLY.
@@ -1379,36 +1416,36 @@ CREATE UNIQUE INDEX idx_mv_dashboard_stats ON mv_dashboard_stats ((1));
 -- Niveaux du système scolaire guinéen.
 -- order_index définit la progression du cursus, utilisée par la promotion (F-19).
 INSERT INTO levels (name, order_index) VALUES
-    ('Primaire', 1),
-    ('Collège',  2),
-    ('Lycée',    3);
+                                           ('Primaire', 1),
+                                           ('Collège',  2),
+                                           ('Lycée',    3);
 
 
 -- Modèles de SMS (F-13).
 -- Les variables {{…}} sont remplacées à l'envoi par SmsTemplateEngine.
 -- NOTE : en SQL, une apostrophe à l'intérieur d'une chaîne se double ('').
 INSERT INTO sms_templates (code, category, content_fr, variables) VALUES
-(
-    'fee_reminder',
-    'FINANCIAL',
-    'Bonjour {{parent_name}}, les frais de {{student_name}} ({{class_name}}) s''élèvent à {{amount_due}} GNF. Merci de régler avant le {{due_date}}.',
-    '["parent_name","student_name","class_name","amount_due","due_date"]'::jsonb
-),
-(
-    'payment_received',
-    'FINANCIAL',
-    'Bonjour {{parent_name}}, paiement de {{amount_paid}} GNF reçu pour {{student_name}}. Reste dû: {{remaining}} GNF. Reçu n°{{receipt_number}}.',
-    '["parent_name","student_name","amount_paid","remaining","receipt_number"]'::jsonb
-),
-(
-    'report_card_published',
-    'ACADEMIC',
-    'Bonjour {{parent_name}}, le bulletin de {{term_name}} de {{student_name}} est disponible. Moy: {{average}}/20. Rang: {{rank}}/{{class_size}}.',
-    '["parent_name","term_name","student_name","average","rank","class_size"]'::jsonb
-),
-(
-    'absence_notification',
-    'ACADEMIC',
-    'Bonjour {{parent_name}}, votre enfant {{student_name}} était absent(e) le {{date}}. Merci de nous contacter.',
-    '["parent_name","student_name","date"]'::jsonb
-);
+                                                                      (
+                                                                          'fee_reminder',
+                                                                          'FINANCIAL',
+                                                                          'Bonjour {{parent_name}}, les frais de {{student_name}} ({{class_name}}) s''élèvent à {{amount_due}} GNF. Merci de régler avant le {{due_date}}.',
+                                                                          '["parent_name","student_name","class_name","amount_due","due_date"]'::jsonb
+                                                                      ),
+                                                                      (
+                                                                          'payment_received',
+                                                                          'FINANCIAL',
+                                                                          'Bonjour {{parent_name}}, paiement de {{amount_paid}} GNF reçu pour {{student_name}}. Reste dû: {{remaining}} GNF. Reçu n°{{receipt_number}}.',
+                                                                          '["parent_name","student_name","amount_paid","remaining","receipt_number"]'::jsonb
+                                                                      ),
+                                                                      (
+                                                                          'report_card_published',
+                                                                          'ACADEMIC',
+                                                                          'Bonjour {{parent_name}}, le bulletin de {{term_name}} de {{student_name}} est disponible. Moy: {{average}}/20. Rang: {{rank}}/{{class_size}}.',
+                                                                          '["parent_name","term_name","student_name","average","rank","class_size"]'::jsonb
+                                                                      ),
+                                                                      (
+                                                                          'absence_notification',
+                                                                          'ACADEMIC',
+                                                                          'Bonjour {{parent_name}}, votre enfant {{student_name}} était absent(e) le {{date}}. Merci de nous contacter.',
+                                                                          '["parent_name","student_name","date"]'::jsonb
+                                                                      );

@@ -1,159 +1,234 @@
 package com.schoolsaas.identity.service;
 
-import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.config.multitenancy.TenantContext;
 import com.schoolsaas.identity.dto.request.LoginRequest;
 import com.schoolsaas.identity.dto.response.AuthResponse;
+import com.schoolsaas.identity.dto.response.SchoolSummaryResponse;
+import com.schoolsaas.platform.entity.Person;
 import com.schoolsaas.platform.entity.School;
-import com.schoolsaas.platform.repository.SchoolRepository;
+import com.schoolsaas.platform.entity.SchoolMembership;
+import com.schoolsaas.platform.repository.PersonRepository;
+import com.schoolsaas.platform.repository.SchoolMembershipRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Authentification (F-02).
+ * Authentification multi-écoles (F-02).
  *
  * -----------------------------------------------------------------------------
- * POURQUOI CETTE CLASSE N'A PLUS DE @Transactional
+ * PAS DE @Transactional GLOBAL — même raison que pour les schedulers et
+ * l'onboarding : Hibernate fige le tenant résolu par TenantIdentifierResolver
+ * à la CRÉATION de la session, pas à chaque requête. Mélanger un accès schema
+ * public (Person, School) et un accès schema tenant (User) dans une seule
+ * transaction utilise le mauvais schema pour le second accès. Principe
+ * conservé : orchestrateur SANS transaction, qui positionne TenantContext
+ * puis délègue à un bean EXTERNE (AuthTenantService) dont la méthode est
+ * @Transactional — l'appel passe par le proxy Spring, une session neuve
+ * s'ouvre avec le tenant déjà correctement positionné.
  * -----------------------------------------------------------------------------
- * La version précédente portait @Transactional sur login() en entier, avec ce
- * déroulé :
- *     1. schoolRepository.findBySlugAndStatusIn(...)   ← lecture en schema public
- *     2. TenantContext.set(school.getSchemaName())
- *     3. userRepository.findByEmailAndIsActiveTrue(...) ← lecture en schema tenant
+ * RÉSOLUTION DE L'ÉCOLE
+ * -----------------------------------------------------------------------------
+ * Le flux ne demande plus l'école à l'avance : la personne tape seulement
+ * son email et son mot de passe. L'école cible est résolue AVANT toute
+ * vérification de mot de passe, via resolveTargetMembership(), dans cet
+ * ordre :
+ *   1. tenantSlug fourni explicitement (option avancée)     → cette école
+ *   2. Person.lastConnectedSchool, si encore active         → cette école
+ *   3. Aucune des deux : choix ALÉATOIRE parmi les écoles
+ *      actives restantes de la personne                     → repli
+ *   4. Aucune école active du tout                           → accès refusé
  *
- * C'est EXACTEMENT le bug déjà rencontré sur les schedulers (relation
- * "student_fees" does not exist) : @Transactional lie une session Hibernate à
- * la transaction DÈS L'ENTRÉE dans la méthode. Le tenant résolu par
- * TenantIdentifierResolver est figé à CE moment-là — pas à chaque requête.
- *
- * Au moment où la transaction s'ouvre, TenantContext.get() vaut encore null
- * (rien n'a encore été positionné) → le tenant se fige sur "public" pour toute
- * la durée de cette session. L'étape 1 fonctionne par coïncidence, car School
- * porte @Table(schema = "public") — la requête est qualifiée explicitement,
- * indifférente au search_path. Mais User n'a AUCUNE qualification de schema :
- * elle dépend entièrement du search_path, déjà figé sur "public". Le
- * TenantContext.set() de l'étape 2 arrive trop tard pour la session déjà ouverte.
- *
- * → Symptôme attendu en production : "relation users does not exist".
- *
- * CORRECTION : le principe déjà appliqué aux schedulers. L'orchestrateur (cette
- * classe) N'OUVRE AUCUNE TRANSACTION. Il charge l'école (accès public, sans
- * dépendance au tenant), positionne TenantContext, PUIS délègue à un bean
- * EXTERNE (AuthTenantService) dont la méthode est annotée @Transactional.
- * L'appel passe par le proxy Spring : une session Hibernate NEUVE est ouverte à
- * cet instant, avec le tenant déjà correctement positionné dès sa création.
+ * Une SEULE vérification de mot de passe par connexion (coût constant, quel
+ * que soit le nombre d'écoles possédées). Le même algorithme couvre le cas
+ * "école habituelle suspendue et aucune autre" sans code particulier :
+ * l'étape 3 ne trouve rien, l'étape 4 bloque l'accès.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final SchoolRepository  schoolRepository;
-    private final AuthTenantService authTenantService;
+    private final PersonRepository           personRepository;
+    private final SchoolMembershipRepository membershipRepository;
+    private final AuthTenantService          authTenantService;
+    private final EntityManager              entityManager;
 
-    /**
-     * Authentifie un utilisateur pour une école donnée (F-02a).
-     */
+    /** Authentifie une personne et résout automatiquement son école (F-02a). */
     public AuthResponse login(LoginRequest request) {
-        log.info("Tentative de connexion pour {} sur le tenant {}",
-                request.getEmail(), request.getTenantSlug());
+        log.info("Tentative de connexion pour {}", request.getEmail());
 
-        // Lecture en schema PUBLIC — indépendante du TenantContext puisque
-        // School est explicitement qualifiée (@Table(schema = "public")).
-        // Peut donc être faite AVANT tout positionnement du tenant.
-        School school = schoolRepository
-                .findBySlugAndStatusIn(request.getTenantSlug(),
-                        List.of(SchoolStatus.ACTIVE, SchoolStatus.TRIAL))
-                .orElseThrow(() -> BusinessException.notFound(
-                        "TENANT_NOT_FOUND", "École inactive ou inexistante"));
+        Person person = personRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> BusinessException.unauthorized(
+                        "INVALID_CREDENTIALS", "Identifiants incorrects"));
+
+        SchoolMembership target = resolveTargetMembership(person, request.getTenantSlug());
+        School school = target.getSchool();
+
+        boolean fallbackOccurred = person.getLastConnectedSchool() != null
+                && !person.getLastConnectedSchool().getId().equals(school.getId());
 
         try {
             TenantContext.set(school.getSchemaName());
 
-            // Appel EXTERNE (bean différent) → passe par le proxy Spring →
-            // une transaction (et donc une session Hibernate) neuve s'ouvre
-            // ICI, avec le tenant déjà positionné.
-            return authTenantService.authenticate(request, school);
+            AuthResponse response = authTenantService.authenticate(request, school, fallbackOccurred);
+            updateLastConnectedSchool(person.getId(), school.getId());
+            return response;
 
         } finally {
             TenantContext.clear();
         }
+    }
+
+    /**
+     * Change d'école SANS reconnexion, pour une personne déjà authentifiée.
+     * Ne revérifie AUCUN mot de passe : l'identité a déjà été prouvée par le
+     * token d'accès courant. Seule l'appartenance active est contrôlée.
+     *
+     * @param currentEmail email extrait du token d'accès courant (SecurityContext)
+     */
+    public AuthResponse switchSchool(String currentEmail, String targetSlug) {
+        Person person = personRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> BusinessException.unauthorized(
+                        "INVALID_TOKEN", "Compte introuvable"));
+
+        SchoolMembership target = membershipRepository
+                .findActiveOperationalByPersonId(person.getId())
+                .stream()
+                .filter(m -> m.getSchool().getSlug().equals(targetSlug))
+                .findFirst()
+                .orElseThrow(() -> BusinessException.unauthorized(
+                        "SCHOOL_NOT_ASSOCIATED",
+                        "Ce compte n'est pas associé à cette école, ou elle est indisponible"));
+
+        School school = target.getSchool();
+
+        try {
+            TenantContext.set(school.getSchemaName());
+
+            // Réutilise refreshTokens() : même besoin (charger un utilisateur
+            // par id, vérifier isActive, émettre des tokens), sans mot de passe.
+            AuthResponse response = authTenantService.refreshTokens(
+                    target.getTenantUserId(), school.getSchemaName());
+
+            updateLastConnectedSchool(person.getId(), school.getId());
+            return response;
+
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    /** Liste les écoles actives de la personne authentifiée (sélecteur d'écoles). */
+    public List<SchoolSummaryResponse> getMySchools(String currentEmail) {
+        Person person = personRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> BusinessException.unauthorized(
+                        "INVALID_TOKEN", "Compte introuvable"));
+
+        return membershipRepository.findActiveOperationalByPersonId(person.getId())
+                .stream()
+                .map(m -> new SchoolSummaryResponse(
+                        m.getSchool().getSlug(),
+                        m.getSchool().getName(),
+                        m.getRolesSnapshot()))
+                .toList();
     }
 
     /**
      * Renouvelle les tokens à partir d'un refresh token valide (F-02b).
-     *
-     * CORRECTION DE SÉCURITÉ MAJEURE vs la version précédente :
-     *
-     *   L'ancienne implémentation régénérait des tokens en lisant SEULEMENT
-     *   les claims du VIEUX refresh token (email, tenantId, roles), SANS
-     *   JAMAIS interroger la base de données. Conséquences concrètes :
-     *
-     *     • Un utilisateur désactivé (isActive = false) après l'émission du
-     *       token continuait d'obtenir des tokens valides indéfiniment, tant
-     *       qu'il rafraîchissait dans la fenêtre de 7 jours.
-     *     • Un rôle rétrogradé par le directeur (TEACHER → aucun droit) restait
-     *       actif dans les nouveaux tokens émis, car les rôles étaient recopiés
-     *       tels quels depuis l'ancien token, jamais relus depuis la table users.
-     *     • Une école SUSPENDUE pour impayé (SchoolStatus.SUSPENDED) continuait
-     *       de fonctionner indéfiniment via refresh — la suspension n'était
-     *       vérifiée qu'au login initial, jamais ensuite. Pour un SaaS dont la
-     *       suspension pour impayé est un mécanisme central, c'est un trou
-     *       direct dans le modèle économique.
-     *
-     *   CORRECTION : refresh() revalide désormais systématiquement l'état réel
-     *   de l'école ET de l'utilisateur en base, exactement comme le ferait un
-     *   nouveau login — via le même mécanisme de délégation à un bean externe.
-     *
-     * CORRECTION DE SÉCURITÉ SECONDAIRE — confusion de type de token :
-     *   Rien ne vérifiait que le token soumis ici était bien un refresh token
-     *   (claim "type" = "refresh") et non un access token. Un access token
-     *   (valide 1h) aurait pu être présenté à cet endpoint pour obtenir de
-     *   nouveaux tokens indéfiniment, contournant sa durée de vie prévue.
+     * Revalide systématiquement l'utilisateur en base — jamais de confiance
+     * aveugle dans les claims du vieux token.
      */
     public AuthResponse refresh(String refreshToken) {
-        validateRefreshToken(refreshToken);
+        if (!authTenantService.isTokenValid(refreshToken)) {
+            throw BusinessException.unauthorized(
+                    "INVALID_TOKEN", "Token de rafraîchissement invalide ou expiré");
+        }
+        if (!authTenantService.isRefreshTokenType(refreshToken)) {
+            throw BusinessException.unauthorized(
+                    "INVALID_TOKEN_TYPE", "Ce token n'est pas un token de rafraîchissement");
+        }
 
         String tenantSchema = authTenantService.extractTenantSchema(refreshToken);
         UUID   userId        = authTenantService.extractUserId(refreshToken);
 
-        // Vérification de l'école en schema PUBLIC, avant tout positionnement
-        // du tenant — mêmes raisons qu'en login() : School est schema-qualifiée,
-        // aucune dépendance au TenantContext ici.
-        schoolRepository.findBySchemaNameAndStatusIn(tenantSchema,
-                        List.of(SchoolStatus.ACTIVE, SchoolStatus.TRIAL))
-                .orElseThrow(() -> BusinessException.unauthorized(
-                        "TENANT_SUSPENDED", "École suspendue ou inexistante"));
-
         try {
             TenantContext.set(tenantSchema);
-
-            // Appel externe → nouvelle session Hibernate, tenant déjà positionné.
             return authTenantService.refreshTokens(userId, tenantSchema);
-
         } finally {
             TenantContext.clear();
         }
     }
 
+    // =========================================================================
+    // Résolution de l'école cible
+    // =========================================================================
+
+    private SchoolMembership resolveTargetMembership(Person person, String explicitSlug) {
+
+        List<SchoolMembership> activeMemberships =
+                membershipRepository.findActiveOperationalByPersonId(person.getId());
+
+        if (activeMemberships.isEmpty()) {
+            throw BusinessException.unauthorized(
+                    "NO_ACTIVE_SCHOOL", "Aucune école active n'est associée à ce compte");
+        }
+
+        if (explicitSlug != null && !explicitSlug.isBlank()) {
+            return activeMemberships.stream()
+                    .filter(m -> m.getSchool().getSlug().equals(explicitSlug))
+                    .findFirst()
+                    .orElseThrow(() -> BusinessException.unauthorized(
+                            "SCHOOL_NOT_ASSOCIATED",
+                            "Ce compte n'est pas associé à cette école, ou elle est indisponible"));
+        }
+
+        UUID lastSchoolId = person.getLastConnectedSchool() != null
+                ? person.getLastConnectedSchool().getId()
+                : null;
+
+        if (lastSchoolId != null) {
+            Optional<SchoolMembership> usual = activeMemberships.stream()
+                    .filter(m -> m.getSchool().getId().equals(lastSchoolId))
+                    .findFirst();
+            if (usual.isPresent()) {
+                return usual.get();
+            }
+        }
+
+        // Repli aléatoire. Si une seule école active reste, elle est
+        // mécaniquement choisie.
+        SchoolMembership fallback = activeMemberships.get(
+                ThreadLocalRandom.current().nextInt(activeMemberships.size()));
+
+        log.warn("École habituelle indisponible pour {} — repli sur {}",
+                person.getEmail(), fallback.getSchool().getSlug());
+
+        return fallback;
+    }
+
     /**
-     * Valide la signature/expiration du token ET son TYPE.
-     * Sans cette seconde vérification, un access token pourrait être utilisé
-     * comme refresh token (voir Javadoc de refresh() ci-dessus).
+     * Met à jour la dernière école visitée.
+     * entityManager.getReference() : proxy Hibernate portant seulement l'id,
+     * sans déclencher de SELECT.
+     * Propagation.REQUIRES_NEW : commit indépendant, cohérent avec
+     * OnboardingService.markSchoolAsFailed.
      */
-    private void validateRefreshToken(String token) {
-        if (!authTenantService.isTokenValid(token)) {
-            throw BusinessException.unauthorized(
-                    "INVALID_TOKEN", "Token de rafraîchissement invalide ou expiré");
-        }
-        if (!authTenantService.isRefreshTokenType(token)) {
-            throw BusinessException.unauthorized(
-                    "INVALID_TOKEN_TYPE", "Ce token n'est pas un token de rafraîchissement");
-        }
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateLastConnectedSchool(UUID personId, UUID schoolId) {
+        personRepository.findById(personId).ifPresent(person -> {
+            School reference = entityManager.getReference(School.class, schoolId);
+            person.setLastConnectedSchool(reference);
+            personRepository.save(person);
+        });
     }
 }

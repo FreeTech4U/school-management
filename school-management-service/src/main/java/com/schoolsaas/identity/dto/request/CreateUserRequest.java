@@ -1,6 +1,5 @@
 package com.schoolsaas.identity.dto.request;
 
-import com.schoolsaas.common.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,8 +26,8 @@ public class CreateUserRequest {
     @Size(min = 8, message = "Le mot de passe doit faire au moins 8 caractères")
     private String password;
 
-    @NotNull(message = "Le rôle est obligatoire")
-    private Role role; // DIRECTOR, TEACHER, ACCOUNTANT
+    @NotBlank(message = "Le rôle est obligatoire")
+    private String role; // DIRECTOR, TEACHER, ACCOUNTANT
 
     private String avatarUrl;
 

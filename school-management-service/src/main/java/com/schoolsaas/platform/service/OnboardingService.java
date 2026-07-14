@@ -1,20 +1,17 @@
 package com.schoolsaas.platform.service;
 
+import com.schoolsaas.platform.entity.*;
+import com.schoolsaas.platform.repository.*;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import com.schoolsaas.common.enums.BillingCycle;
-import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.enums.SubscriptionStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.common.util.SlugUtils;
 import com.schoolsaas.platform.dto.request.OnboardingRequest;
 import com.schoolsaas.platform.dto.response.OnboardingResponse;
-import com.schoolsaas.platform.entity.School;
-import com.schoolsaas.platform.entity.SchoolSubscription;
-import com.schoolsaas.platform.entity.SubscriptionPlan;
-import com.schoolsaas.platform.repository.SchoolRepository;
-import com.schoolsaas.platform.repository.SchoolSubscriptionRepository;
-import com.schoolsaas.platform.repository.SubscriptionPlanRepository;
+import  com.schoolsaas.common.constants.SystemRoleCodes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,54 +20,20 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
- * Service responsable de l'onboarding des nouvelles écoles sur la plateforme
- * (F-01).
+ * Service responsable de l'onboarding des nouvelles écoles (F-01) et de leur
+ * rattachement au compte multi-écoles d'une personne.
  *
- * -----------------------------------------------------------------------------
- * POURQUOI CE SERVICE N'EST PAS UN SIMPLE BLOC @Transactional
- * -----------------------------------------------------------------------------
- * Une tentation naturelle serait d'annoter onboard() avec @Transactional pour
- * obtenir un rollback automatique en cas d'échec. C'est un piège :
- *
- *   1. DEADLOCK GARANTI
- *      TenantMigrationService.migrateTenant() construit son propre objet
- *      Flyway, qui ouvre SA PROPRE connexion JDBC vers le DataSource — une
- *      connexion indépendante de celle que Spring attache au contexte
- *      @Transactional.
- *      Si le CREATE SCHEMA a été fait sur la connexion transactionnelle SANS
- *      être committé, il est invisible depuis la connexion de Flyway
- *      (isolation PostgreSQL). Flyway tente alors de verrouiller ce schema,
- *      se heurte au verrou tenu par la transaction ouverte, et ATTEND
- *      indéfiniment — pendant que cette même transaction attend le retour de
- *      Flyway pour continuer. Aucune des deux parties ne peut avancer.
- *
- *   2. LE DDL N'EST DE TOUTE FAÇON PAS TRANSACTIONNEL PARTOUT
- *      CREATE SCHEMA et les migrations Flyway ne peuvent pas être annulés par
- *      un simple ROLLBACK JPA : ce sont des opérations gérées par des
- *      connexions et des mécanismes distincts.
- *
- * CONSÉQUENCE : l'onboarding est découpé en étapes qui COMMITTENT
- * indépendamment. Il n'y a PAS de rollback global possible. En cas d'échec en
- * cours de route, l'école reste dans un état partiel — mais JAMAIS silencieux :
- * elle est marquée SUSPENDED (voir markSchoolAsFailed) et l'opération peut être
- * rejouée sans dupliquer ce qui a déjà réussi (voir idempotence ci-dessous).
- *
- * C'est un modèle de type Saga simplifié : pas d'atomicité globale, mais une
- * séquence d'étapes idempotentes avec un état observable à chaque étape.
- *
- * -----------------------------------------------------------------------------
- * IDEMPOTENCE — POURQUOI CHAQUE ÉTAPE PEUT ÊTRE REJOUÉE SANS DANGER
- * -----------------------------------------------------------------------------
- *   • CREATE SCHEMA IF NOT EXISTS   → sans effet si déjà créé
- *   • Flyway.migrate()              → ignore les migrations déjà appliquées
- *   • createDirectorIfAbsent()      → vérifie l'existence avant d'insérer
- *
- * Cela permet à retryOnboarding() de reprendre une inscription interrompue à
- * n'importe quelle étape, sans jamais créer de doublon.
+ * CORRECTION vs version précédente — les rôles ne sont plus un enum Java fixe
+ * (com.schoolsaas.common.enums.Role, supprimé). Le rôle DIRECTOR attribué au
+ * créateur de l'école est désormais résolu par son CODE (SystemRoleCodes.
+ * DIRECTOR) auprès de public.roles, dont l'id (UUID) est ensuite inséré dans
+ * <schema_tenant>.user_roles.role_id — une clé étrangère inter-schema.
  */
 @Slf4j
 @Service
@@ -80,56 +43,42 @@ public class OnboardingService {
     private final SchoolRepository             schoolRepository;
     private final SubscriptionPlanRepository   planRepository;
     private final SchoolSubscriptionRepository subscriptionRepository;
-    private final TenantMigrationService       migrationService;
-    private final PasswordEncoder              passwordEncoder;
-    private final JdbcTemplate                 jdbcTemplate;
+    private final PersonRepository      personRepository;
+    private final SchoolMembershipRepository    membershipRepository;
+    private final RoleCatalogService             roleCatalogService;
+    private final TenantMigrationService        migrationService;
+    private final PasswordEncoder               passwordEncoder;
+    private final JdbcTemplate                  jdbcTemplate;
+    private final EntityManager entityManager;
 
-    /** Durée de la période d'essai (F-01). */
-    private static final int TRIAL_DURATION_DAYS = 30;
-
-    /**
-     * Garde-fou anti-injection SQL. Le nom du schema est concaténé dans des
-     * requêtes DDL (CREATE SCHEMA, INSERT ... INTO {schema}.users) car
-     * PostgreSQL n'autorise pas les paramètres préparés pour les noms d'objets.
-     * Doit rester aligné avec la contrainte chk_school_schema_name en base.
-     */
-    private static final Pattern SCHEMA_NAME_PATTERN = Pattern.compile("^[a-z0-9_]+$");
+    private static final int     TRIAL_DURATION_DAYS = 30;
+    private static final Pattern SCHEMA_NAME_PATTERN  = Pattern.compile("^[a-z0-9_]+$");
 
     // =========================================================================
     // POINT D'ENTRÉE PRINCIPAL
     // =========================================================================
 
-    /**
-     * Inscrit une nouvelle école (F-01).
-     *
-     * Volontairement SANS @Transactional sur cette méthode : voir la Javadoc de
-     * la classe. Chaque étape gère sa propre atomicité.
-     *
-     * @throws BusinessException SLUG_ALREADY_TAKEN, EMAIL_ALREADY_TAKEN,
-     *                           PLAN_NOT_FOUND, ou ONBOARDING_FAILED si une
-     *                           étape technique échoue après la création de
-     *                           l'école (l'école est alors marquée SUSPENDED
-     *                           et l'opération peut être rejouée via
-     *                           retryOnboarding()).
-     */
     public OnboardingResponse onboard(OnboardingRequest request) {
         log.info("Démarrage de l'onboarding pour l'école : {}", request.getSchoolName());
 
-        validateUniqueness(request.getSlug(), request.getEmail());
+        validateUniqueness(request.getSlug());
         SubscriptionPlan plan = findPlanOrThrow(request.getPlanCode());
         String schemaName = SlugUtils.toSchemaName(request.getSlug());
         validateSchemaName(schemaName);
 
         // Étape 1 — écritures JPA (school + subscription), COMMITÉES avant de
-        // passer au DDL. C'est ce commit qui évite le deadlock décrit plus haut.
+        // passer au DDL (voir Javadoc historique : évite le deadlock Flyway).
         School school = createSchoolAndSubscription(request, plan, schemaName);
 
-        // Étapes 2 et 3 — DDL et création du directeur. Si l'une échoue,
-        // l'école est marquée en échec puis l'exception est propagée : le
-        // contrôleur renvoie une erreur claire, et l'opération est rejouable.
         try {
+            // Étape 2 — DDL : schema + migrations Flyway.
             provisionTenantSchema(schemaName);
-            createDirectorIfAbsent(schemaName, request);
+
+            // Étape 3 — compte DIRECTOR dans le tenant, avec son rôle.
+            UUID directorId = createDirectorIfAbsent(schemaName, request);
+
+            // Étape 4 — rattachement au compte multi-écoles (schema public).
+            linkPersonToSchool(request.getEmail(), school, directorId, SystemRoleCodes.DIRECTOR);
 
         } catch (Exception e) {
             log.error("Onboarding incomplet pour '{}' (schema={}) : {}",
@@ -150,15 +99,6 @@ public class OnboardingService {
         return buildResponse(school);
     }
 
-    /**
-     * Reprend un onboarding interrompu (école marquée SUSPENDED après un
-     * ONBOARDING_FAILED).
-     *
-     * Chaque sous-étape est idempotente : rejouer cette méthode sur une école
-     * déjà complètement provisionnée est sans danger (aucun doublon, aucune
-     * erreur), ce qui permet de l'utiliser aussi comme simple vérification de
-     * cohérence.
-     */
     public OnboardingResponse retryOnboarding(String slug) {
         School school = schoolRepository.findBySlug(slug)
                 .orElseThrow(() -> new BusinessException(
@@ -172,12 +112,12 @@ public class OnboardingService {
         try {
             provisionTenantSchema(schemaName);
 
-            // Il n'y a pas de mot de passe à disposition lors d'une reprise :
-            // si le directeur n'existe pas encore, il faut le recréer via un
-            // flux dédié (ex : lien d'activation envoyé par email), pas ici.
-            if (!directorExists(schemaName, school.getEmail())) {
+            Optional<UUID> directorId = findUserIdByEmail(schemaName, school.getEmail());
+            if (directorId.isEmpty()) {
                 log.warn("Aucun directeur trouvé pour '{}' — un flux de création "
                         + "manuelle ou d'invitation est nécessaire.", school.getName());
+            } else {
+                linkPersonToSchool(school.getEmail(), school, directorId.get(), SystemRoleCodes.DIRECTOR);
             }
 
             reactivateSchool(school.getId());
@@ -196,13 +136,15 @@ public class OnboardingService {
     // VALIDATIONS
     // =========================================================================
 
-    private void validateUniqueness(String slug, String email) {
+    private void validateUniqueness(String slug) {
         if (schoolRepository.existsBySlug(slug)) {
             throw BusinessException.conflict("SLUG_ALREADY_TAKEN", "Ce slug est déjà utilisé");
         }
-        if (schoolRepository.existsByEmail(email)) {
-            throw BusinessException.conflict("EMAIL_ALREADY_TAKEN", "Cet email est déjà utilisé");
-        }
+        // L'email n'est PLUS vérifié ici : le même email peut légitimement
+        // créer une DEUXIÈME école (portefeuille multi-écoles). schools.email
+        // n'est d'ailleurs plus UNIQUE (voir V1__init_public_schema.sql) —
+        // seule l'identité de la PERSONNE (persons.email) doit rester unique,
+        // et Person.findByEmail réutilise simplement la ligne existante.
     }
 
     private SubscriptionPlan findPlanOrThrow(String planCode) {
@@ -211,12 +153,6 @@ public class OnboardingService {
                         "PLAN_NOT_FOUND", "Plan de souscription introuvable : " + planCode));
     }
 
-    /**
-     * Revalide le nom de schema calculé par SlugUtils. Double sécurité : la
-     * contrainte chk_school_schema_name en base rejetterait de toute façon un
-     * nom invalide, mais échouer ici évite un aller-retour SQL inutile et
-     * produit un message d'erreur explicite plutôt qu'une DataIntegrityViolation.
-     */
     private void validateSchemaName(String schemaName) {
         if (schemaName == null || !SCHEMA_NAME_PATTERN.matcher(schemaName).matches()) {
             throw new BusinessException("INVALID_SCHEMA_NAME",
@@ -225,20 +161,9 @@ public class OnboardingService {
     }
 
     // =========================================================================
-    // ÉTAPE 1 — École + abonnement (transaction indépendante et committée)
+    // ÉTAPE 1 — École + abonnement
     // =========================================================================
 
-    /**
-     * Crée l'école et son abonnement dans UNE transaction dédiée.
-     *
-     * @Transactional ici (et non sur onboard()) est essentiel : à la sortie de
-     * cette méthode, la transaction est committée et le schema — créé à l'étape
-     * suivante — sera visible depuis la connexion indépendante de Flyway.
-     *
-     * Propagation par défaut (REQUIRED) : suffisant ici car cette méthode est
-     * appelée depuis onboard(), qui n'ouvre elle-même aucune transaction. Le
-     * commit a donc bien lieu au retour de cette méthode.
-     */
     @Transactional
     public School createSchoolAndSubscription(
             OnboardingRequest request, SubscriptionPlan plan, String schemaName) {
@@ -272,15 +197,9 @@ public class OnboardingService {
     }
 
     // =========================================================================
-    // ÉTAPE 2 — Provisioning du schema tenant (DDL, hors transaction JPA)
+    // ÉTAPE 2 — Provisioning du schema tenant
     // =========================================================================
 
-    /**
-     * Crée le schema PostgreSQL de l'école puis y applique les migrations Flyway.
-     *
-     * IF NOT EXISTS rend cette étape idempotente : rejouable après un échec
-     * précédent sans provoquer d'erreur si le schema existe déjà.
-     */
     private void provisionTenantSchema(String schemaName) {
         log.debug("Création du schema : {}", schemaName);
         jdbcTemplate.execute("CREATE SCHEMA IF NOT EXISTS " + schemaName);
@@ -290,77 +209,100 @@ public class OnboardingService {
     }
 
     // =========================================================================
-    // ÉTAPE 3 — Création du compte directeur
+    // ÉTAPE 3 — Compte directeur (users + user_roles, insertion JDBC directe)
     // =========================================================================
 
     /**
-     * Crée le compte DIRECTOR dans le schema tenant, sauf s'il existe déjà.
+     * Crée le directeur s'il n'existe pas déjà, avec son rôle DIRECTOR.
      *
-     * La vérification préalable rend cette étape idempotente : une reprise
-     * après échec ne provoque pas de violation de contrainte UNIQUE sur l'email.
+     * CORRECTION — role_id (UUID) remplace role_code (String) suite à
+     * l'introduction de la table public.roles. L'id du rôle DIRECTOR est
+     * résolu UNE FOIS par requête JPA (schema public, indépendante du tenant),
+     * puis inséré tel quel dans user_roles via JDBC — cohérent avec le reste
+     * de cette méthode qui écrit déjà directement en SQL dans le tenant.
      */
-    private void createDirectorIfAbsent(String schemaName, OnboardingRequest request) {
-        if (directorExists(schemaName, request.getEmail())) {
-            log.debug("Le directeur existe déjà pour {} — aucune action.", schemaName);
-            return;
+    private UUID createDirectorIfAbsent(String schemaName, OnboardingRequest request) {
+        Optional<UUID> existing = findUserIdByEmail(schemaName, request.getEmail());
+        if (existing.isPresent()) {
+            log.debug("Le directeur existe déjà pour {} — aucune création.", schemaName);
+            return existing.get();
         }
 
-        String sql = "INSERT INTO " + schemaName + ".users "
-                + "(first_name, last_name, email, password_hash, role, is_active) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        UUID directorId = UUID.randomUUID();
 
-        jdbcTemplate.update(sql,
+        jdbcTemplate.update(
+                "INSERT INTO " + schemaName + ".users "
+                        + "(id, first_name, last_name, email, password_hash, is_active) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                directorId,
                 request.getDirectorFirstName(),
                 request.getDirectorLastName(),
                 request.getEmail(),
                 passwordEncoder.encode(request.getDirectorPassword()),
-                Role.DIRECTOR.name(),
                 true
         );
+
+        UUID directorRoleId = roleCatalogService.getIdByCode(SystemRoleCodes.DIRECTOR);
+
+        jdbcTemplate.update(
+                "INSERT INTO " + schemaName + ".user_roles (user_id, role_id) VALUES (?, ?)",
+                directorId, directorRoleId
+        );
+
+        return directorId;
     }
 
-    /**
-     * Vérifie l'existence d'un utilisateur par email dans le schema tenant.
-     *
-     * Requête SQL native et non JPA : le schema tenant n'est pas connu au
-     * moment de la compilation, et cette vérification intervient avant même que
-     * le TenantContext ne soit positionné (ce code s'exécute côté onboarding,
-     * dans le schema public, pas dans le contexte d'une requête utilisateur
-     * authentifiée). Le nom de schema est validé en amont (validateSchemaName),
-     * la concaténation est donc sûre.
-     */
-    private boolean directorExists(String schemaName, String email) {
-        Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM " + schemaName + ".users WHERE email = ?",
-                Integer.class,
+    private Optional<UUID> findUserIdByEmail(String schemaName, String email) {
+        List<UUID> ids = jdbcTemplate.query(
+                "SELECT id FROM " + schemaName + ".users WHERE email = ?",
+                (rs, rowNum) -> (UUID) rs.getObject("id"),
                 email
         );
-        return count != null && count > 0;
+        return ids.stream().findFirst();
+    }
+
+    // =========================================================================
+    // ÉTAPE 4 — Rattachement au compte multi-écoles (schema public)
+    // =========================================================================
+
+    /**
+     * @param roleCode code du rôle (ex : SystemRoleCodes.DIRECTOR), stocké
+     *                 tel quel dans SchoolMembership.rolesSnapshot — un simple
+     *                 résumé d'affichage, pas une source de vérité pour les
+     *                 autorisations (celles-ci viennent du JWT, alimenté par
+     *                 user_roles côté tenant).
+     */
+    @Transactional
+    public void linkPersonToSchool(String email, School school, UUID tenantUserId, String roleCode) {
+
+        Person person = personRepository.findByEmail(email)
+                .orElseGet(() -> personRepository.save(
+                        Person.builder().email(email).build()));
+
+        boolean alreadyMember = membershipRepository
+                .findByPersonIdAndSchoolId(person.getId(), school.getId())
+                .isPresent();
+
+        if (!alreadyMember) {
+            SchoolMembership membership = SchoolMembership.builder()
+                    .person(person)
+                    .school(school)
+                    .tenantUserId(tenantUserId)
+                    .rolesSnapshot(roleCode)
+                    .isActive(true)
+                    .build();
+            membershipRepository.save(membership);
+        }
+
+        School schoolRef = entityManager.getReference(School.class, school.getId());
+        person.setLastConnectedSchool(schoolRef);
+        personRepository.save(person);
     }
 
     // =========================================================================
     // GESTION DES ÉCHECS
     // =========================================================================
 
-    /**
-     * Marque une école en échec de provisioning.
-     *
-     * Propagation.REQUIRES_NEW est OBLIGATOIRE ici, et non un simple détail
-     * d'optimisation.
-     *
-     * Cette méthode est appelée depuis le bloc catch de onboard(), qui lève
-     * ensuite une BusinessException. Sans REQUIRES_NEW, si onboard() venait un
-     * jour à être appelée depuis un contexte lui-même @Transactional (par
-     * exemple un contrôleur ou un test annoté @Transactional), l'UPDATE
-     * ci-dessous ne serait qu'un savepoint interne à cette transaction
-     * englobante — et le throw qui suit dans onboard() en provoquerait le
-     * ROLLBACK, y compris de CE marquage. L'école resterait alors TRIAL,
-     * silencieusement cassée, sans aucune trace de l'échec.
-     *
-     * REQUIRES_NEW suspend la transaction courante (s'il y en a une), ouvre une
-     * transaction entièrement nouvelle, la committe à son retour — rendant ce
-     * marquage acquis quoi qu'il arrive ensuite dans l'appelant.
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markSchoolAsFailed(UUID schoolId) {
         schoolRepository.findById(schoolId).ifPresent(school -> {
@@ -370,10 +312,6 @@ public class OnboardingService {
         });
     }
 
-    /**
-     * Réactive une école après une reprise d'onboarding réussie.
-     * Même raisonnement que markSchoolAsFailed : transaction indépendante.
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void reactivateSchool(UUID schoolId) {
         schoolRepository.findById(schoolId).ifPresent(school -> {

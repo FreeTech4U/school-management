@@ -1,6 +1,6 @@
 package com.schoolsaas.identity.service;
 
-import com.schoolsaas.common.enums.Role;
+import com.schoolsaas.common.constants.SystemRoleCodes;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.identity.dto.request.CreateUserRequest;
 import com.schoolsaas.identity.dto.response.UserResponse;
@@ -46,7 +46,7 @@ class UserServiceTest {
 
     @Test
     void getAllUsers_ReturnsMappedPage() {
-        User user = user("director@test.com", Role.DIRECTOR);
+        User user = user("director@test.com");
         UserResponse response = response(user);
         PageRequest pageable = PageRequest.of(0, 10);
 
@@ -72,7 +72,7 @@ class UserServiceTest {
     @Test
     void createUser_WithTeacherRole_CreatesTeacherAndEncodesPassword() {
         CreateUserRequest request = teacherRequest();
-        User savedUser = user(request.getEmail(), request.getRole());
+        User savedUser = user(request.getEmail());
         savedUser.setId(UUID.randomUUID());
         UserResponse response = response(savedUser);
 
@@ -109,7 +109,7 @@ class UserServiceTest {
     @Test
     void updateUser_WithNewPassword_UpdatesFieldsAndPasswordHash() {
         UUID id = UUID.randomUUID();
-        User existing = user("old@test.com", Role.DIRECTOR);
+        User existing = user("old@test.com");
         existing.setId(id);
         CreateUserRequest request = new CreateUserRequest();
         request.setFirstName("New");
@@ -119,7 +119,7 @@ class UserServiceTest {
         request.setPassword("new-password");
         request.setAvatarUrl("avatar.png");
 
-        User updated = user(request.getEmail(), existing.getRole());
+        User updated = user(request.getEmail());
         updated.setId(id);
         updated.setFirstName(request.getFirstName());
         updated.setLastName(request.getLastName());
@@ -143,7 +143,7 @@ class UserServiceTest {
     @Test
     void deleteUser_SetsInactiveFlag() {
         UUID id = UUID.randomUUID();
-        User existing = user("director@test.com", Role.DIRECTOR);
+        User existing = user("director@test.com");
         existing.setId(id);
         existing.setIsActive(true);
 
@@ -162,7 +162,7 @@ class UserServiceTest {
         request.setEmail("teacher@test.com");
         request.setPhone("+224622334455");
         request.setPassword("password123");
-        request.setRole(Role.TEACHER);
+     //   request.setRole(Role.TEACHER);
         request.setEmployeeNumber("EMP-001");
         request.setHireDate(LocalDate.of(2024, 1, 10));
         request.setSpecialty("Mathematics");
@@ -171,14 +171,14 @@ class UserServiceTest {
         return request;
     }
 
-    private User user(String email, Role role) {
+    private User user(String email) {
         return User.builder()
                 .firstName("John")
                 .lastName("Doe")
                 .email(email)
                 .phone("+224600000000")
                 .passwordHash("hash")
-                .role(role)
+               // .role(role)
                 .isActive(true)
                 .build();
     }
@@ -190,7 +190,7 @@ class UserServiceTest {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .role(user.getRole().name())
+        //        .role(user.getRole().name())
                 .avatarUrl(user.getAvatarUrl())
                 .isActive(user.getIsActive())
                 .build();

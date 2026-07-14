@@ -1,6 +1,6 @@
 package com.schoolsaas.identity.service;
 
-import com.schoolsaas.common.enums.Role;
+import com.schoolsaas.common.constants.SystemRoleCodes;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.identity.dto.request.CreateUserRequest;
 import com.schoolsaas.identity.dto.response.UserResponse;
@@ -51,14 +51,14 @@ public class UserService {
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+              //  .role(request.getRole())
                 .avatarUrl(request.getAvatarUrl())
                 .isActive(true)
                 .build();
 
         user = userRepository.save(user);
 
-        if (Role.TEACHER.equals(request.getRole())) {
+        if (SystemRoleCodes.TEACHER.equals(request.getRole())) {
             Teacher teacher = Teacher.builder()
                     .user(user)
                     .employeeNumber(request.getEmployeeNumber())

@@ -1,6 +1,5 @@
 package com.schoolsaas.identity.controller;
 
-import com.schoolsaas.common.enums.Role;
 import com.schoolsaas.identity.dto.request.CreateUserRequest;
 import com.schoolsaas.identity.dto.response.UserResponse;
 import com.schoolsaas.identity.service.UserService;
