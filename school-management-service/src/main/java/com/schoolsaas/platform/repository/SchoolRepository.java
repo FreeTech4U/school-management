@@ -28,4 +28,6 @@ public interface SchoolRepository extends JpaRepository<School, UUID> {
 
     /** Récupère toutes les écoles ayant certains statuts */
     List<School> findAllByStatusIn(Collection<SchoolStatus> statuses);
+
+    Optional<School> findBySchemaNameAndStatusIn(String schemaName, Collection<SchoolStatus> statuses);
 }
