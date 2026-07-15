@@ -2,67 +2,92 @@ package com.schoolsaas.identity.service;
 
 import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.exception.BusinessException;
-import com.schoolsaas.config.security.JwtService;
 import com.schoolsaas.identity.dto.request.LoginRequest;
 import com.schoolsaas.identity.dto.response.AuthResponse;
-import com.schoolsaas.identity.entity.User;
-import com.schoolsaas.identity.repository.UserRepository;
+import com.schoolsaas.platform.entity.Person;
 import com.schoolsaas.platform.entity.School;
-import com.schoolsaas.platform.repository.SchoolRepository;
+import com.schoolsaas.platform.entity.SchoolMembership;
+import com.schoolsaas.platform.repository.PersonRepository;
+import com.schoolsaas.platform.repository.SchoolMembershipRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
     @Mock
-    private SchoolRepository schoolRepository;
+    private PersonRepository personRepository;
     @Mock
-    private UserRepository userRepository;
+    private SchoolMembershipRepository membershipRepository;
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private AuthTenantService authTenantService;
     @Mock
-    private JwtService jwtService;
+    private EntityManager entityManager;
 
     @InjectMocks
     private AuthService authService;
 
-    @Test
-    void login_Success() {
-        // Given
-        LoginRequest request = new LoginRequest();
-        request.setEmail("user@test.com");
-        request.setPassword("password");
-        request.setTenantSlug("test-school");
+    private Person person;
+    private School school;
+    private SchoolMembership membership;
 
-        School school = new School();
+    private void givenPersonWithOneActiveSchool() {
+        person = new Person();
+        person.setId(UUID.randomUUID());
+        person.setEmail("user@test.com");
+
+        school = new School();
+        school.setId(UUID.randomUUID());
+        school.setSlug("test-school");
         school.setSchemaName("school_test");
         school.setStatus(SchoolStatus.ACTIVE);
         school.setName("Test School");
 
-        User user = new User();
-        user.setEmail("user@test.com");
-        user.setPasswordHash("hashed_password");
-     //   user.setRole(Role.DIRECTOR);
-        user.setFirstName("John");
-        user.setLastName("Doe");
+        membership = SchoolMembership.builder()
+                .person(person)
+                .school(school)
+                .tenantUserId(UUID.randomUUID())
+                .isActive(true)
+                .build();
 
-        when(schoolRepository.findBySlugAndStatusIn(any(), any())).thenReturn(Optional.of(school));
-        when(userRepository.findByEmailAndIsActiveTrue(any())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(any(), any())).thenReturn(true);
-        when(jwtService.generateToken(any())).thenReturn("access_token");
-        when(jwtService.generateRefreshToken(any())).thenReturn("refresh_token");
+        when(personRepository.findByEmail(person.getEmail())).thenReturn(Optional.of(person));
+        when(membershipRepository.findActiveOperationalByPersonId(person.getId()))
+                .thenReturn(List.of(membership));
+    }
+
+    @Test
+    void login_Success() {
+        // Given
+        givenPersonWithOneActiveSchool();
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail(person.getEmail());
+        request.setPassword("password");
+        request.setTenantSlug(school.getSlug());
+
+        AuthResponse expectedResponse = AuthResponse.builder()
+                .accessToken("access_token")
+                .refreshToken("refresh_token")
+                .user(AuthResponse.UserData.builder().fullName("John Doe").build())
+                .build();
+
+        when(authTenantService.authenticate(eq(request), eq(school), eq(false)))
+                .thenReturn(expectedResponse);
+        when(personRepository.findById(person.getId())).thenReturn(Optional.of(person));
+        when(entityManager.getReference(School.class, school.getId())).thenReturn(school);
 
         // When
         AuthResponse response = authService.login(request);
@@ -75,37 +100,34 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_SchoolNotFound_ThrowsException() {
+    void login_PersonNotFound_ThrowsException() {
         // Given
         LoginRequest request = new LoginRequest();
-        request.setTenantSlug("unknown");
+        request.setEmail("unknown@test.com");
+        request.setPassword("password");
 
-        when(schoolRepository.findBySlugAndStatusIn(any(), any())).thenReturn(Optional.empty());
+        when(personRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
 
         // When & Then
         BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request));
-        assertEquals("TENANT_NOT_FOUND", ex.getCode());
+        assertEquals("INVALID_CREDENTIALS", ex.getCode());
     }
 
     @Test
     void login_InvalidPassword_ThrowsException() {
         // Given
+        givenPersonWithOneActiveSchool();
+
         LoginRequest request = new LoginRequest();
-        request.setEmail("user@test.com");
+        request.setEmail(person.getEmail());
         request.setPassword("wrong");
-        request.setTenantSlug("test-school");
+        request.setTenantSlug(school.getSlug());
 
-        School school = new School();
-        school.setStatus(SchoolStatus.ACTIVE);
-
-        User user = new User();
-        user.setPasswordHash("hashed");
-
-        when(schoolRepository.findBySlugAndStatusIn(any(), any())).thenReturn(Optional.of(school));
-        when(userRepository.findByEmailAndIsActiveTrue(any())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(any(), any())).thenReturn(false);
+        when(authTenantService.authenticate(eq(request), eq(school), eq(false)))
+                .thenThrow(BusinessException.unauthorized("INVALID_CREDENTIALS", "Identifiants incorrects"));
 
         // When & Then
-        assertThrows(BadCredentialsException.class, () -> authService.login(request));
+        BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request));
+        assertEquals("INVALID_CREDENTIALS", ex.getCode());
     }
 }

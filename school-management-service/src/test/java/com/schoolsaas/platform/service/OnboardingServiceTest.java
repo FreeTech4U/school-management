@@ -1,13 +1,18 @@
 package com.schoolsaas.platform.service;
 
+import com.schoolsaas.common.constants.SystemRoleCodes;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.platform.dto.request.OnboardingRequest;
 import com.schoolsaas.platform.dto.response.OnboardingResponse;
+import com.schoolsaas.platform.entity.Person;
 import com.schoolsaas.platform.entity.School;
 import com.schoolsaas.platform.entity.SubscriptionPlan;
+import com.schoolsaas.platform.repository.PersonRepository;
+import com.schoolsaas.platform.repository.SchoolMembershipRepository;
 import com.schoolsaas.platform.repository.SchoolRepository;
 import com.schoolsaas.platform.repository.SchoolSubscriptionRepository;
 import com.schoolsaas.platform.repository.SubscriptionPlanRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +22,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -32,11 +38,19 @@ class OnboardingServiceTest {
     @Mock
     private SchoolSubscriptionRepository subscriptionRepository;
     @Mock
+    private PersonRepository personRepository;
+    @Mock
+    private SchoolMembershipRepository membershipRepository;
+    @Mock
+    private RoleCatalogService roleCatalogService;
+    @Mock
     private TenantMigrationService migrationService;
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private JdbcTemplate jdbcTemplate;
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private OnboardingService onboardingService;
@@ -57,10 +71,13 @@ class OnboardingServiceTest {
         plan.setCode("BASIC");
 
         when(schoolRepository.existsBySlug(anyString())).thenReturn(false);
-        when(schoolRepository.existsByEmail(anyString())).thenReturn(false);
         when(planRepository.findByCode("BASIC")).thenReturn(Optional.of(plan));
         when(schoolRepository.save(any(School.class))).thenAnswer(i -> i.getArgument(0));
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
+        when(roleCatalogService.getIdByCode(SystemRoleCodes.DIRECTOR)).thenReturn(UUID.randomUUID());
+        when(personRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(membershipRepository.findByPersonIdAndSchoolId(any(), any())).thenReturn(Optional.empty());
 
         // When
         OnboardingResponse response = onboardingService.onboard(request);

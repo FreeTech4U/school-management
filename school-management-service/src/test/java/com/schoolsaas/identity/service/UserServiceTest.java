@@ -162,7 +162,7 @@ class UserServiceTest {
         request.setEmail("teacher@test.com");
         request.setPhone("+224622334455");
         request.setPassword("password123");
-     //   request.setRole(Role.TEACHER);
+        request.setRole(SystemRoleCodes.TEACHER);
         request.setEmployeeNumber("EMP-001");
         request.setHireDate(LocalDate.of(2024, 1, 10));
         request.setSpecialty("Mathematics");

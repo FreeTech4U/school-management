@@ -1,5 +1,6 @@
 package com.schoolsaas.identity.controller;
 
+import com.schoolsaas.common.constants.SystemRoleCodes;
 import com.schoolsaas.identity.dto.request.CreateUserRequest;
 import com.schoolsaas.identity.dto.response.UserResponse;
 import com.schoolsaas.identity.service.UserService;
@@ -127,7 +128,7 @@ class UserControllerTest extends AbstractControllerTest {
         request.setEmail("director@test.com");
         request.setPhone("+224611111111");
         request.setPassword("password123");
-        request.setRole(Role.DIRECTOR);
+        request.setRole(SystemRoleCodes.DIRECTOR);
         return request;
     }
 
