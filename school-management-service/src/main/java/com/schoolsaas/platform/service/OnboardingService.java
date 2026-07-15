@@ -8,6 +8,7 @@ import com.schoolsaas.common.enums.BillingCycle;
 import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.common.enums.SubscriptionStatus;
 import com.schoolsaas.common.exception.BusinessException;
+import com.schoolsaas.common.util.SchemaNameValidator;
 import com.schoolsaas.common.util.SlugUtils;
 import com.schoolsaas.platform.dto.request.OnboardingRequest;
 import com.schoolsaas.platform.dto.response.OnboardingResponse;
@@ -23,7 +24,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 /**
  * Service responsable de l'onboarding des nouvelles écoles (F-01) et de leur
@@ -51,8 +51,7 @@ public class OnboardingService {
     private final JdbcTemplate                  jdbcTemplate;
     private final EntityManager entityManager;
 
-    private static final int     TRIAL_DURATION_DAYS = 30;
-    private static final Pattern SCHEMA_NAME_PATTERN  = Pattern.compile("^[a-z0-9_]+$");
+    private static final int TRIAL_DURATION_DAYS = 30;
 
     // =========================================================================
     // POINT D'ENTRÉE PRINCIPAL
@@ -154,7 +153,7 @@ public class OnboardingService {
     }
 
     private void validateSchemaName(String schemaName) {
-        if (schemaName == null || !SCHEMA_NAME_PATTERN.matcher(schemaName).matches()) {
+        if (!SchemaNameValidator.isValid(schemaName)) {
             throw new BusinessException("INVALID_SCHEMA_NAME",
                     "Nom de schema invalide : " + schemaName);
         }

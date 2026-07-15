@@ -1,5 +1,6 @@
 package com.schoolsaas.dashboard.service;
 
+import com.schoolsaas.common.util.SchemaNameValidator;
 import com.schoolsaas.config.multitenancy.TenantContext;
 import com.schoolsaas.dashboard.dto.response.DashboardStatsResponse;
 import lombok.RequiredArgsConstructor;
@@ -8,16 +9,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.regex.Pattern;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
 
     private final JdbcTemplate jdbcTemplate;
-
-    private static final Pattern SCHEMA_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+$");
 
     /**
      * CORRECTION 1 : clé de cache par tenant.
@@ -81,7 +78,7 @@ public class DashboardService {
     private String currentSchema() {
         String schema = TenantContext.get();
 
-        if (schema == null || !SCHEMA_PATTERN.matcher(schema).matches()) {
+        if (!SchemaNameValidator.isValid(schema)) {
             throw new IllegalStateException(
                     "Aucun tenant valide dans le contexte courant: " + schema);
         }

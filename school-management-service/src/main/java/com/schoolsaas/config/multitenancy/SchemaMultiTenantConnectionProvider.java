@@ -1,5 +1,6 @@
 package com.schoolsaas.config.multitenancy;
 
+import com.schoolsaas.common.util.SchemaNameValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
@@ -9,7 +10,6 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -17,7 +17,6 @@ import java.util.regex.Pattern;
 public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectionProvider<String> {
 
     private final DataSource dataSource;
-    private static final Pattern SCHEMA_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+$");
 
     @Override
     public Connection getAnyConnection() throws SQLException {
@@ -73,7 +72,7 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
     }
 
     private void validateSchemaName(String schemaName) {
-        if (schemaName == null || !SCHEMA_NAME_PATTERN.matcher(schemaName).matches()) {
+        if (!SchemaNameValidator.isValid(schemaName)) {
             throw new IllegalArgumentException("Invalid schema name: " + schemaName);
         }
     }
