@@ -8,7 +8,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * Paiement d'un abonnement : l'ÉCOLE paie SCHOOLSAAS.

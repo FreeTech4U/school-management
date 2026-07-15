@@ -5,7 +5,6 @@ import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.TermRepository;
 import com.schoolsaas.common.enums.YearStatus;
-import com.schoolsaas.common.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -1,13 +1,10 @@
 package com.schoolsaas.academic.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
-import com.schoolsaas.grading.entity.Grade;
-import com.schoolsaas.grading.entity.ReportCard;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 /**
  * Trimestre d'une année scolaire.

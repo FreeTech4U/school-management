@@ -1,7 +1,5 @@
 package com.schoolsaas.finance.service;
 
-import com.schoolsaas.academic.entity.SchoolClass;
-import com.schoolsaas.academic.repository.SchoolClassRepository;
 import com.schoolsaas.common.enums.FeeStatus;
 import com.schoolsaas.common.exception.BusinessException;
 import com.schoolsaas.enrollment.entity.StudentEnrollment;

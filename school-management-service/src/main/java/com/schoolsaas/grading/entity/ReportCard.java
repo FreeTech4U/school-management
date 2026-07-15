@@ -1,15 +1,12 @@
 package com.schoolsaas.grading.entity;
 
-import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.common.entity.BaseEntity;
 import com.schoolsaas.common.enums.ReportCardStatus;
-import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**

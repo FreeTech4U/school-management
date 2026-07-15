@@ -1,10 +1,7 @@
 package com.schoolsaas.grading.entity;
 
-import com.schoolsaas.academic.entity.ClassSubject;
-import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.common.entity.BaseEntity;
 import com.schoolsaas.common.enums.EvaluationType;
-import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import jakarta.persistence.*;
 import lombok.*;
 

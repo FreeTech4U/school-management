@@ -1,6 +1,5 @@
 package com.schoolsaas.grading.service;
 
-import com.schoolsaas.academic.entity.ClassSubject;
 import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.academic.repository.ClassSubjectRepository;
 import com.schoolsaas.academic.repository.TermRepository;

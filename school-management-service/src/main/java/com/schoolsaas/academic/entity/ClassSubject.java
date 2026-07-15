@@ -1,10 +1,7 @@
 package com.schoolsaas.academic.entity;
 
 import com.schoolsaas.common.entity.BaseEntity;
-import com.schoolsaas.identity.entity.User;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Max;
 import lombok.*;
 
 import java.util.UUID;

@@ -3,7 +3,6 @@ package com.schoolsaas.attendance.entity;
 import com.schoolsaas.common.entity.BaseEntity;
 import com.schoolsaas.common.enums.AttendanceStatus;
 import com.schoolsaas.common.enums.Period;
-import com.schoolsaas.enrollment.entity.StudentEnrollment;
 import jakarta.persistence.*;
 import lombok.*;
 

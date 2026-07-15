@@ -1,6 +1,5 @@
 package com.schoolsaas.enrollment.service;
 
-import com.schoolsaas.academic.entity.Term;
 import com.schoolsaas.academic.repository.AcademicYearRepository;
 import com.schoolsaas.academic.repository.SchoolClassRepository;
 import com.schoolsaas.academic.repository.TermRepository;
@@ -22,9 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing student promotions.

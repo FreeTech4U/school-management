@@ -4,7 +4,6 @@ import com.schoolsaas.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.UUID;
 
 /**
  * Classe (ex : « 6ème A »).
