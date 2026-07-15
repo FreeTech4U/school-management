@@ -45,7 +45,7 @@ public class AcademicYearService {
     @Transactional
     public AcademicYear updateYear(UUID id, AcademicYear yearDetails) {
         AcademicYear year = getYearById(id);
-        if ("CLOSED".equals(year.getStatus())) {
+        if (YearStatus.CLOSED.equals(year.getStatus())) {
             throw new BusinessException("YEAR_CLOSED", "Une année fermée ne peut plus être modifiée");
         }
         
