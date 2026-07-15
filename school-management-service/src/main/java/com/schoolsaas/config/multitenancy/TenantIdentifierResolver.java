@@ -11,7 +11,7 @@ public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver
     @Override
     public String resolveCurrentTenantIdentifier() {
         String tenantId = TenantContext.get();
-        log.info("[DIAG] resolveCurrentTenantIdentifier() appelé, retourne = {}", tenantId);
+        log.debug("resolveCurrentTenantIdentifier() -> {}", tenantId);
         return (tenantId != null) ? tenantId : "public";
     }
 

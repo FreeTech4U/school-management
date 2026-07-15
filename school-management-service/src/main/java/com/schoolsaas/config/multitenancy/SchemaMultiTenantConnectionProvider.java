@@ -30,7 +30,7 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
 
     @Override
     public Connection getConnection(String tenantIdentifier) throws SQLException {
-        log.info("[DIAG] getConnection() appelé avec tenantIdentifier = {}", tenantIdentifier);
+        log.debug("getConnection() -> tenantIdentifier = {}", tenantIdentifier);
         validateSchemaName(tenantIdentifier);
         final Connection connection = getAnyConnection();
         try (Statement statement = connection.createStatement()) {

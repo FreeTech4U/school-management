@@ -1,7 +1,6 @@
 package com.schoolsaas.identity.service;
 
 import com.schoolsaas.common.exception.BusinessException;
-import com.schoolsaas.config.multitenancy.TenantContext;
 import com.schoolsaas.config.security.AuthenticatedUser;
 import com.schoolsaas.config.security.JwtService;
 import com.schoolsaas.identity.dto.request.LoginRequest;
@@ -63,8 +62,6 @@ public class AuthTenantService {
 
     @Transactional
     public AuthResponse authenticate(LoginRequest request, School school, boolean fallbackOccurred) {
-
-        log.info("[DIAG] TenantContext au début de authenticate() = {}", TenantContext.get());
 
         User user = userRepository.findByEmailAndIsActiveTrue(request.getEmail())
                 .orElseThrow(() -> BusinessException.unauthorized(
