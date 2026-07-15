@@ -6,7 +6,7 @@
 
 ---
 
-## Score global : **~70 %**
+## Score global : **~71 %**
 
 | Phase | Moyenne | Détail |
 |---|---|---|
@@ -32,7 +32,7 @@
 | F-09 | Inscriptions + génération frais | 70 % | 🟡 |
 | F-10 | Structure des frais | 95 % | 🟢 |
 | F-11 | Suivi frais élèves | 45 % | 🔴 |
-| F-12 | Paiements | 60 % | 🟡 |
+| F-12 | Paiements | 68 % | 🟡 |
 | F-13 | SMS | 40 % | 🔴 |
 | F-14 | Dashboard | 90 % | 🟢 |
 | F-15 | Saisie des notes | 80 % | 🟢 |
@@ -101,9 +101,9 @@
 **🔴 Stub confirmé :** `GET /students/{studentId}/fees/summary` renvoie un objet **codé en dur** (`studentName("TODO")`, tous les montants à zéro) — commentaire explicite `// TODO: Implement in Phase 5` (`FeeStructureController.java:194-202`).
 **Manque :** `GET /students/{studentId}/fees` (liste simple), `POST /enrollments/{enrollmentId}/generate-fees` (régénération manuelle), `GET /fees/unpaid` — tous absents.
 
-### F-12 · Paiements — 60 %
+### F-12 · Paiements — 68 %
 **Fait :** création avec vérifications `ALLOCATION_MISMATCH`, `FEE_ALREADY_PAID`, `OVER_PAYMENT` — bonne rigueur métier. Annulation dans les 24h avec note d'audit (pas de suppression).
-**🔴 Bug confirmé :** la date de paiement fournie par le client est ignorée — `PaymentService.java:49` : `// .paymentDate(request.getPaymentDate().atStartOfDay()) // Simplification` est commentée. Impossible d'enregistrer un paiement à une date antérieure (ex. saisie en retard).
+**✅ Corrigé (2026-07-16) :** la date de paiement fournie par le client était ignorée (ligne commentée `.paymentDate(...).atStartOfDay()`, obsolète depuis que `Payment.paymentDate` est passé en `LocalDate`). `PaymentService.createPayment()` respecte maintenant `request.getPaymentDate()`. Régression couverte par un test qui échouait avant le correctif (`PaymentServiceTest.createPayment_Success`, date antérieure de 3 jours).
 **Manque :** confirmation SMS au parent non envoyée (`// TODO: CommunicationService`, ligne 86) ; `GET /payments` (liste filtrable), `GET /payments/{id}`, `GET /payments/student/{studentId}/pending-fees` absents.
 
 ### F-13 · SMS — 40 % 🔴
@@ -159,7 +159,7 @@ Toutes les variables listées sont déclarées et lues dans `application.yml`/`a
 ## 🔴 Bugs et écarts à fort impact (à traiter en priorité)
 
 1. ~~**F-03 : aucun rôle assigné à la création d'un utilisateur via l'API**~~ — **✅ corrigé le 2026-07-16** (`UserService.assignRole()`).
-2. **F-12 : date de paiement ignorée** — impossible d'enregistrer un paiement à une date différente d'aujourd'hui.
+2. ~~**F-12 : date de paiement ignorée**~~ — **✅ corrigé le 2026-07-16**.
 3. **F-19 : la promotion n'a aucun effet concret** — exécuter un lot de promotion ne crée pas les inscriptions de l'année suivante.
 4. **F-16 : pas de PDF ni de notification SMS pour les bulletins** — la fonctionnalité s'arrête à mi-chemin.
 5. **F-13 : aucun SMS n'est réellement envoyé** — provider Orange absent, seul un provider de log existe.
@@ -167,7 +167,7 @@ Toutes les variables listées sont déclarées et lues dans `application.yml`/`a
 ## Suggestions de priorité pour la suite
 
 1. ~~Corriger l'assignation de rôle (F-03)~~ — ✅ fait.
-2. Débloquer F-12 (date de paiement) — correction rapide.
+2. ~~Débloquer F-12 (date de paiement)~~ — ✅ fait.
 3. Compléter F-19 (création d'inscription année suivante) — cœur de la Phase 3.
 4. Implémenter la génération PDF (F-16) — `PdfGeneratorService` existe déjà, il ne manque que le branchement.
 5. Compléter les endpoints de consultation manquants (F-05, F-09, F-11, F-12) — faible complexité, gain de couverture rapide.
@@ -178,3 +178,4 @@ Toutes les variables listées sont déclarées et lues dans `application.yml`/`a
 
 - **2026-07-16** — Analyse initiale complète (19 fonctionnalités + 6 exigences transversales), score global ~69 %.
 - **2026-07-16** — F-03 corrigé (assignation de rôle à la création d'un utilisateur) : 55 % → 88 %, score global ~70 %.
+- **2026-07-16** — F-12 corrigé (date de paiement ignorée) : 60 % → 68 %, score global ~71 %.

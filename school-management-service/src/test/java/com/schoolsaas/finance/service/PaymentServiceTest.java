@@ -66,10 +66,12 @@ class PaymentServiceTest {
         alloc.setStudentFeeId(feeId);
         alloc.setAmount(new BigDecimal("1000"));
 
+        LocalDate backdatedPaymentDate = LocalDate.now().minusDays(3);
+
         CreatePaymentRequest request = new CreatePaymentRequest();
         request.setStudentId(studentId);
         request.setAmount(new BigDecimal("1000"));
-        request.setPaymentDate(LocalDate.now());
+        request.setPaymentDate(backdatedPaymentDate);
         request.setPaymentMethod("CASH");
         request.setAllocations(List.of(alloc));
 
@@ -83,6 +85,9 @@ class PaymentServiceTest {
         assertNotNull(response);
         assertEquals(new BigDecimal("1000"), response.getAmount());
         assertEquals(1, response.getAllocations().size());
+        // La date fournie par le client doit être respectée, pas silencieusement
+        // remplacée par la date du jour (régression F-12).
+        assertEquals(backdatedPaymentDate, response.getPaymentDate());
         verify(studentFeeRepository).save(studentFee);
         assertEquals(new BigDecimal("1000"), studentFee.getAmountPaid());
     }

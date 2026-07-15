@@ -46,7 +46,7 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .studentId(request.getStudentId())
                 .amount(request.getAmount())
-           //     .paymentDate(request.getPaymentDate().atStartOfDay()) // Simplification
+                .paymentDate(request.getPaymentDate())
                 .paymentMethod(PaymentMethod.valueOf(request.getPaymentMethod()))
                 .referenceNumber(request.getReferenceNumber())
                 .notes(request.getNotes())
