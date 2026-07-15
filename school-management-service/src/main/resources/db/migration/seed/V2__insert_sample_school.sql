@@ -1,13 +1,11 @@
 -- =============================================================================
 -- V2__insert_sample_school.sql
 -- Donnée de démonstration : une école d'exemple
-
 --
 -- Rôle : déclencher la création automatique du schema tenant au démarrage.
 --        TenantInitializer parcourt les écoles TRIAL/ACTIVE et applique
 --        V1__init_tenant_schema.sql sur chacune.
 -- =============================================================================
-
 
 -- ── L'école ──────────────────────────────────────────────────────────────────
 -- ON CONFLICT DO NOTHING rend le script idempotent : si Flyway rejoue cette
@@ -28,22 +26,21 @@ INSERT INTO schools (
     currency
 )
 VALUES (
-           'Lycée Sainte Marie de Dixinn',
-           'ste-marie-dixinn',          -- respecte ^[a-z0-9-]+$
-           'tenant_ste_marie',          -- respecte ^[a-z0-9_]+$ (63 car. max)
-           'admin@stemarie.gn',
-           '+224620000000',
-           'Dixinn, Conakry',
-           'Conakry',
-           'GN',
-           'ACTIVE',                    -- CORRECTION : était 'active' (minuscules)
-           -- → violait CHECK (status IN ('TRIAL','ACTIVE',...))
-           'Africa/Conakry',            -- pilote les schedulers : les SMS de relance
-           -- partiront à 8h heure de Conakry
-           'GNF'
-       )
-    ON CONFLICT (slug) DO NOTHING;
-
+    'Lycée Sainte Marie de Dixinn',
+    'ste-marie-dixinn', -- respecte ^[a-z0-9-]+$
+    'tenant_ste_marie', -- respecte ^[a-z0-9_]+$ (63 car. max)
+    'admin@stemarie.gn',
+    '+224620000000',
+    'Dixinn, Conakry',
+    'Conakry',
+    'GN',
+    'ACTIVE', -- CORRECTION : était 'active' (minuscules)
+    -- → violait CHECK (status IN ('TRIAL','ACTIVE',...))
+    'Africa/Conakry', -- pilote les schedulers : les SMS de relance
+    -- partiront à 8h heure de Conakry
+    'GNF'
+)
+ON CONFLICT (slug) DO NOTHING;
 
 -- =============================================================================
 -- 7. DONNÉES INITIALES — Catalogue tarifaire (GNF)
@@ -58,16 +55,23 @@ VALUES (
 -- sécurise la trésorerie et réduit mécaniquement le taux de résiliation.
 -- =============================================================================
 
-INSERT INTO subscription_plans
-(code, name, description, price_monthly, price_yearly,
- max_students, sms_included, features)
+INSERT INTO subscription_plans (
+    code,
+    name,
+    description,
+    price_monthly,
+    price_yearly,
+    max_students,
+    sms_included,
+    features
+)
 VALUES
     (
         'starter',
         'Starter',
         'Pour les petites écoles jusqu''à 200 élèves',
         45000.00,
-        450000.00,          -- 10 mois payés au lieu de 12
+        450000.00, -- 10 mois payés au lieu de 12
         200,
         200,
         '{"timetable": false, "advanced_reports": false, "parent_app": false}'::jsonb
@@ -88,7 +92,7 @@ VALUES
         'Pour les grandes écoles et groupes scolaires — élèves illimités',
         280000.00,
         2800000.00,
-        NULL,               -- illimité
+        NULL, -- illimité
         2000,
         '{"timetable": true, "advanced_reports": true, "parent_app": true}'::jsonb
     );
@@ -109,33 +113,33 @@ INSERT INTO school_subscriptions (
 SELECT
     s.id,
     p.id,
-    'YEARLY',                              -- CORRECTION : colonne absente du
+    'YEARLY', -- CORRECTION : colonne absente du
     -- script d'origine (NOT NULL)
     CURRENT_DATE,
-    (CURRENT_DATE + INTERVAL '1 year')::DATE,  -- CORRECTION : l'expression
-                                               -- produisait un TIMESTAMP, la
-                                               -- colonne attend une DATE
-    'ACTIVE',                              -- CORRECTION : était 'active'
+    (CURRENT_DATE + INTERVAL '1 year')::DATE, -- CORRECTION : l'expression
+    -- produisait un TIMESTAMP, la
+    -- colonne attend une DATE
+    'ACTIVE', -- CORRECTION : était 'active'
     TRUE
-FROM       schools            s
-               CROSS JOIN subscription_plans p
-WHERE  s.slug = 'ste-marie-dixinn'
-  AND  p.code = 'premium'
-  -- Ne rien insérer si l'école a déjà un abonnement actif.
-  AND NOT EXISTS (
-    SELECT 1
-    FROM   school_subscriptions ss
-    WHERE  ss.school_id = s.id
-      AND  ss.status    = 'ACTIVE'
-);
+FROM schools s
+    CROSS JOIN subscription_plans p
+WHERE s.slug = 'ste-marie-dixinn'
+    AND p.code = 'premium'
+    -- Ne rien insérer si l'école a déjà un abonnement actif.
+    AND NOT EXISTS (
+        SELECT 1
+        FROM school_subscriptions ss
+        WHERE ss.school_id = s.id
+            AND ss.status = 'ACTIVE'
+    );
 
 -- ── Rôles ────────────────────────────────────────────────────────────────────
 -- Reprend exactement les 4 valeurs de l'ancien enum Java Role, désormais
 -- supprimé. D'autres rôles pourront être ajoutés plus tard via l'API
 -- d'administration, sans toucher à cette migration ni à aucun schema tenant.
-INSERT INTO roles (code, label) VALUES
-    ('DIRECTOR',   'Directeur'),
-    ('TEACHER',    'Enseignant'),
+INSERT INTO roles (code, label)
+VALUES
+    ('DIRECTOR', 'Directeur'),
+    ('TEACHER', 'Enseignant'),
     ('ACCOUNTANT', 'Comptable'),
-    ('PARENT',     'Parent');
-
+    ('PARENT', 'Parent');
