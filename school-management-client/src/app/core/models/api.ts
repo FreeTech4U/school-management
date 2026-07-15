@@ -59,6 +59,7 @@ export interface AttendanceSummaryResponse {
 export interface AuthResponse {
     accessToken: string;
     expiresIn: number;
+    redirectedToFallbackSchool: boolean;
     refreshToken: string;
     user: UserData;
 }
@@ -126,7 +127,7 @@ export interface CreateUserRequest {
     password: string;
     phone: string;
     qualification: string;
-    role: Role;
+    role: string;
     specialty: string;
 }
 
@@ -310,6 +311,12 @@ export interface ReportCardResponse {
     termName: string;
 }
 
+export interface SchoolSummaryResponse {
+    name: string;
+    rolesSnapshot: string;
+    slug: string;
+}
+
 export interface StudentFeeDiscountRequest {
     discountAmount: number;
     discountReason: string;
@@ -354,6 +361,10 @@ export interface StudentResponse {
     studentNumber: string;
 }
 
+export interface SwitchSchoolRequest {
+    schoolSlug: string;
+}
+
 export interface TimeSlotRequest {
     dayOfWeek: DayOfWeek;
     endTime: Date;
@@ -387,6 +398,7 @@ export interface UserData {
     id: string;
     roles: string[];
     schoolName: string;
+    schoolSlug: string;
     tenantId: string;
 }
 
@@ -409,6 +421,18 @@ export interface WeeklyTimetableResponse {
     entries: TimetableEntryDto[];
 }
 
+export const enum AttendanceStatus {
+    PRESENT = "PRESENT",
+    ABSENT = "ABSENT",
+    LATE = "LATE",
+    EXCUSED = "EXCUSED",
+}
+
+export const enum BillingCycle {
+    MONTHLY = "MONTHLY",
+    YEARLY = "YEARLY",
+}
+
 export const enum DayOfWeek {
     MONDAY = "MONDAY",
     TUESDAY = "TUESDAY",
@@ -416,6 +440,20 @@ export const enum DayOfWeek {
     THURSDAY = "THURSDAY",
     FRIDAY = "FRIDAY",
     SATURDAY = "SATURDAY",
+}
+
+export const enum EnrollmentStatus {
+    ENROLLED = "ENROLLED",
+    TRANSFERRED = "TRANSFERRED",
+    WITHDRAWN = "WITHDRAWN",
+    GRADUATED = "GRADUATED",
+}
+
+export const enum EvaluationType {
+    DEVOIR = "DEVOIR",
+    COMPOSITION = "COMPOSITION",
+    ORAL = "ORAL",
+    TP = "TP",
 }
 
 export const enum FeeStatus {
@@ -441,11 +479,40 @@ export const enum Gender {
     FEMALE = "FEMALE",
 }
 
+export const enum PaymentMethod {
+    CASH = "CASH",
+    ORANGE_MONEY = "ORANGE_MONEY",
+    MTN_MONEY = "MTN_MONEY",
+    WAVE = "WAVE",
+    BANK_TRANSFER = "BANK_TRANSFER",
+    CHECK = "CHECK",
+}
+
+export const enum PaymentStatus {
+    CONFIRMED = "CONFIRMED",
+    CANCELLED = "CANCELLED",
+    REFUNDED = "REFUNDED",
+}
+
+export const enum Period {
+    FULL_DAY = "FULL_DAY",
+    MORNING = "MORNING",
+    AFTERNOON = "AFTERNOON",
+    EVENING = "EVENING",
+}
+
 export const enum PromotionBatchStatus {
     CREATED = "CREATED",
     VALIDATED = "VALIDATED",
     EXECUTED = "EXECUTED",
     CANCELLED = "CANCELLED",
+}
+
+export const enum PromotionStatus {
+    PENDING = "PENDING",
+    PROMOTED = "PROMOTED",
+    REPEATED = "REPEATED",
+    GRADUATED = "GRADUATED",
 }
 
 export const enum ReportCardStatus {
@@ -454,9 +521,50 @@ export const enum ReportCardStatus {
     SENT_TO_PARENT = "SENT_TO_PARENT",
 }
 
-export const enum Role {
-    DIRECTOR = "DIRECTOR",
-    TEACHER = "TEACHER",
-    ACCOUNTANT = "ACCOUNTANT",
-    PARENT = "PARENT",
+export const enum SchoolStatus {
+    TRIAL = "TRIAL",
+    ACTIVE = "ACTIVE",
+    SUSPENDED = "SUSPENDED",
+    DELETED = "DELETED",
+}
+
+export const enum SmsCategory {
+    FINANCIAL = "FINANCIAL",
+    ACADEMIC = "ACADEMIC",
+    ADMINISTRATIVE = "ADMINISTRATIVE",
+    CUSTOM = "CUSTOM",
+}
+
+export const enum SmsStatus {
+    PENDING = "PENDING",
+    SENT = "SENT",
+    DELIVERED = "DELIVERED",
+    FAILED = "FAILED",
+}
+
+export const enum SubscriptionPaymentMethod {
+    BANK_TRANSFER = "BANK_TRANSFER",
+    ORANGE_MONEY = "ORANGE_MONEY",
+    MTN_MONEY = "MTN_MONEY",
+    WAVE = "WAVE",
+    CARD = "CARD",
+    CHECK = "CHECK",
+}
+
+export const enum SubscriptionPaymentStatus {
+    PENDING = "PENDING",
+    COMPLETED = "COMPLETED",
+    FAILED = "FAILED",
+    REFUNDED = "REFUNDED",
+}
+
+export const enum SubscriptionStatus {
+    ACTIVE = "ACTIVE",
+    EXPIRED = "EXPIRED",
+    CANCELLED = "CANCELLED",
+}
+
+export const enum YearStatus {
+    ACTIVE = "ACTIVE",
+    CLOSED = "CLOSED",
 }

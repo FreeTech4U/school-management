@@ -202,6 +202,7 @@
 					<jsonLibrary>jackson2</jsonLibrary>
 					<classPatterns>
 						<classPattern>com.schoolsaas.**.dto.**</classPattern>
+						<classPattern>com.schoolsaas.common.enums.**</classPattern>
 					</classPatterns>
 					<excludeClassPatterns>
 						<excludeClassPattern>**Builder</excludeClassPattern>
