@@ -1,7 +1,9 @@
 package com.schoolsaas.dashboard.service;
 
+import com.schoolsaas.config.multitenancy.TenantContext;
 import com.schoolsaas.dashboard.dto.response.DashboardStatsResponse;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,7 +21,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@Disabled("Requires tenant context - skipped for Phase 6 unit test coverage")
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceTest {
 
@@ -28,6 +29,20 @@ class DashboardServiceTest {
 
     @InjectMocks
     private DashboardService dashboardService;
+
+    @BeforeEach
+    void setUp() {
+        // getStats()/refreshStats() qualifient leurs requêtes avec le schema
+        // du tenant courant (JdbcTemplate ne passe pas par le
+        // MultiTenantConnectionProvider) — il faut donc le positionner ici,
+        // comme le fait JwtAuthenticationFilter à l'exécution.
+        TenantContext.set("test_school");
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
+    }
 
     @Test
     void getStats_Success() {

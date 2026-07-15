@@ -3,7 +3,6 @@ package com.schoolsaas.integration;
 import com.schoolsaas.common.enums.SchoolStatus;
 import com.schoolsaas.platform.entity.School;
 import com.schoolsaas.platform.repository.SchoolRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +15,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled("Requires PostgreSQL container - skipped for Phase 6 unit test coverage")
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("test")
@@ -35,6 +33,7 @@ public class MultiTenancyIntegrationTest {
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.flyway.locations", () -> "classpath:db/migration/public");
+        registry.add("app.jwt.secret", () -> "test-secret-key-for-integration-tests-only");
     }
 
     @Autowired
