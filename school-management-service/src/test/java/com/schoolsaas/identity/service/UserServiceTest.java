@@ -6,9 +6,12 @@ import com.schoolsaas.identity.dto.request.CreateUserRequest;
 import com.schoolsaas.identity.dto.response.UserResponse;
 import com.schoolsaas.identity.entity.Teacher;
 import com.schoolsaas.identity.entity.User;
+import com.schoolsaas.identity.entity.UserRoleAssignment;
 import com.schoolsaas.identity.mapper.UserMapper;
 import com.schoolsaas.identity.repository.TeacherRepository;
 import com.schoolsaas.identity.repository.UserRepository;
+import com.schoolsaas.identity.repository.UserRoleAssignmentRepository;
+import com.schoolsaas.platform.service.RoleCatalogService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -36,6 +39,10 @@ class UserServiceTest {
     private UserRepository userRepository;
     @Mock
     private TeacherRepository teacherRepository;
+    @Mock
+    private UserRoleAssignmentRepository userRoleAssignmentRepository;
+    @Mock
+    private RoleCatalogService roleCatalogService;
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
@@ -75,10 +82,12 @@ class UserServiceTest {
         User savedUser = user(request.getEmail());
         savedUser.setId(UUID.randomUUID());
         UserResponse response = response(savedUser);
+        UUID teacherRoleId = UUID.randomUUID();
 
         when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
         when(passwordEncoder.encode(request.getPassword())).thenReturn("hashed-password");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(roleCatalogService.getIdByCode(SystemRoleCodes.TEACHER)).thenReturn(teacherRoleId);
         when(userMapper.toResponse(savedUser)).thenReturn(response);
 
         UserResponse result = userService.createUser(request);
@@ -86,12 +95,35 @@ class UserServiceTest {
         assertEquals(request.getEmail(), result.getEmail());
         verify(userRepository).save(any(User.class));
 
+        ArgumentCaptor<UserRoleAssignment> roleCaptor = ArgumentCaptor.forClass(UserRoleAssignment.class);
+        verify(userRoleAssignmentRepository).save(roleCaptor.capture());
+        assertSame(savedUser, roleCaptor.getValue().getUser());
+        assertEquals(teacherRoleId, roleCaptor.getValue().getRoleId());
+
         ArgumentCaptor<Teacher> teacherCaptor = ArgumentCaptor.forClass(Teacher.class);
         verify(teacherRepository).save(teacherCaptor.capture());
         Teacher teacher = teacherCaptor.getValue();
         assertSame(savedUser, teacher.getUser());
         assertEquals("EMP-001", teacher.getEmployeeNumber());
         assertEquals("Mathematics", teacher.getSpecialty());
+    }
+
+    @Test
+    void createUser_WithInvalidRole_ThrowsBusinessExceptionAndSkipsPersistence() {
+        CreateUserRequest request = teacherRequest();
+        request.setRole("PARENT");
+        User savedUser = user(request.getEmail());
+        savedUser.setId(UUID.randomUUID());
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(passwordEncoder.encode(request.getPassword())).thenReturn("hashed-password");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> userService.createUser(request));
+
+        assertEquals("INVALID_ROLE", ex.getCode());
+        verify(userRoleAssignmentRepository, never()).save(any(UserRoleAssignment.class));
+        verify(teacherRepository, never()).save(any(Teacher.class));
     }
 
     @Test

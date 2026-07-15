@@ -6,7 +6,7 @@
 
 ---
 
-## Score global : **~69 %**
+## Score global : **~70 %**
 
 | Phase | Moyenne | Détail |
 |---|---|---|
@@ -23,7 +23,7 @@
 |----|----------------|---|--------|
 | F-01 | Onboarding école | 90 % | 🟢 |
 | F-02 | Authentification | 85 % | 🟢 |
-| F-03 | Gestion utilisateurs | 55 % | 🟡 |
+| F-03 | Gestion utilisateurs | 88 % | 🟢 |
 | F-04 | Années scolaires | 85 % | 🟢 |
 | F-05 | Trimestres | 60 % | 🟡 |
 | F-06 | Niveaux et classes | 75 % | 🟡 |
@@ -63,10 +63,10 @@
 **Évolution vs spec :** le flux de login a été étendu à un modèle multi-écoles par personne (`Person`/`SchoolMembership`) — dépasse la spec initiale (login simple tenantSlug+email+password), reste compatible.
 **Écart :** `POST /api/v1/auth/logout` est déclaré `[AUTHENTIFIÉ]` dans la spec mais `SecurityConfig` le laisse `permitAll()` comme tout `/api/v1/auth/**` — n'importe qui peut l'appeler sans token.
 
-### F-03 · Gestion des utilisateurs — 55 % ⚠️
+### F-03 · Gestion des utilisateurs — 88 % ✅ (corrigé le 2026-07-16)
 **Fait :** CRUD complet (`UserController`), toutes les routes en `hasRole('DIRECTOR')` conforme à la spec, soft-delete (`isActive=false`), création automatique de `Teacher` si role=TEACHER.
-**🔴 Bug confirmé :** `UserService.createUser()` ne crée **jamais** de ligne `UserRoleAssignment` — un utilisateur créé via l'API n'a **aucun rôle assigné**. Son JWT aura une liste de rôles vide après connexion, donc aucun `@PreAuthorize` ne le laissera rien faire. La ligne `.role(request.getRole())` est commentée dans le code (`UserService.java:54`), jamais remplacée par l'appel équivalent à `UserRoleAssignmentRepository`.
-**Impact :** seul le DIRECTOR créé à l'onboarding (via `OnboardingService`, qui fait sa propre insertion JDBC directe) a réellement un rôle fonctionnel.
+**✅ Corrigé :** `UserService.createUser()` assigne désormais réellement le rôle demandé via une nouvelle méthode `assignRole()` — résolution du code de rôle en UUID (`RoleCatalogService.getIdByCode`) puis sauvegarde d'un `UserRoleAssignment`. Rôle validé contre `DIRECTOR`/`TEACHER`/`ACCOUNTANT` (`INVALID_ROLE` sinon, conforme à la spec). Couvert par un nouveau test (`UserServiceTest.createUser_WithTeacherRole_...` étendu + `createUser_WithInvalidRole_...`).
+**Reste :** `updateUser()` ne permet toujours pas de changer le rôle d'un utilisateur existant (non traité dans la spec comme un besoin explicite, mais un gap mineur si le produit en a besoin plus tard).
 
 ### F-04 · Années scolaires — 85 %
 **Fait :** `isCurrent` unique (reset SQL), immutabilité si `CLOSED`, `getCurrentYear()`, `closeYear()`.
@@ -158,7 +158,7 @@ Toutes les variables listées sont déclarées et lues dans `application.yml`/`a
 
 ## 🔴 Bugs et écarts à fort impact (à traiter en priorité)
 
-1. **F-03 : aucun rôle assigné à la création d'un utilisateur via l'API** — un DIRECTOR qui crée un TEACHER via `POST /users` obtient un compte qui ne pourra jamais rien faire après connexion. C'est probablement le bug le plus bloquant du lot pour un usage réel.
+1. ~~**F-03 : aucun rôle assigné à la création d'un utilisateur via l'API**~~ — **✅ corrigé le 2026-07-16** (`UserService.assignRole()`).
 2. **F-12 : date de paiement ignorée** — impossible d'enregistrer un paiement à une date différente d'aujourd'hui.
 3. **F-19 : la promotion n'a aucun effet concret** — exécuter un lot de promotion ne crée pas les inscriptions de l'année suivante.
 4. **F-16 : pas de PDF ni de notification SMS pour les bulletins** — la fonctionnalité s'arrête à mi-chemin.
@@ -166,7 +166,7 @@ Toutes les variables listées sont déclarées et lues dans `application.yml`/`a
 
 ## Suggestions de priorité pour la suite
 
-1. Corriger l'assignation de rôle (F-03) — bug simple à corriger, impact élevé.
+1. ~~Corriger l'assignation de rôle (F-03)~~ — ✅ fait.
 2. Débloquer F-12 (date de paiement) — correction rapide.
 3. Compléter F-19 (création d'inscription année suivante) — cœur de la Phase 3.
 4. Implémenter la génération PDF (F-16) — `PdfGeneratorService` existe déjà, il ne manque que le branchement.
@@ -177,3 +177,4 @@ Toutes les variables listées sont déclarées et lues dans `application.yml`/`a
 ## Journal des mises à jour
 
 - **2026-07-16** — Analyse initiale complète (19 fonctionnalités + 6 exigences transversales), score global ~69 %.
+- **2026-07-16** — F-03 corrigé (assignation de rôle à la création d'un utilisateur) : 55 % → 88 %, score global ~70 %.
