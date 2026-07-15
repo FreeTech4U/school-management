@@ -57,6 +57,13 @@ server:
   port: ${SERVER_PORT:8080}
 
 app:
+  cors:
+    # Filet de sécurité pour les profils qui ne surchargent pas cette valeur
+    # (ex. profil "test", sans application-test.yml). dev et prod définissent
+    # chacun leur propre liste, qui remplace entièrement celle-ci.
+    allowed-origins:
+      - http://localhost:4200
+
   jwt:
     # PAS de valeur par défaut : si JWT_SECRET est absent, l'app refuse de démarrer.
     # C'est voulu — mieux vaut un crash au boot qu'un secret public en prod.
